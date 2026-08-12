@@ -143,7 +143,12 @@ export function VisionCard({
                   {vision.tags.slice(0, 5).map((tag) => (
                     <li
                       key={tag}
-                      className="rounded-full border border-white/15 bg-white/10 px-2 py-0.5 text-[10px] tracking-wide text-parchment-dim opacity-70 backdrop-blur-sm transition-opacity duration-500 group-hover:opacity-100 group-focus-visible:opacity-100"
+                      // A dark chip rather than a translucent white one: white
+                      // over a bright photo lightens exactly where the text
+                      // needs something to sit against. Full opacity by default,
+                      // deepening on hover, so keywords are readable without
+                      // being pointed at.
+                      className="rounded-full border border-white/20 bg-black/55 px-2 py-0.5 text-[10px] tracking-wide text-parchment backdrop-blur-md transition-colors duration-500 group-hover:border-white/30 group-hover:bg-black/70"
                     >
                       {tag}
                     </li>
