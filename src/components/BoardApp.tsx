@@ -5,13 +5,14 @@ import { AnimatePresence, motion } from "motion/react";
 import { Nav } from "@/components/Nav";
 import { Board } from "@/components/Board";
 import { Lightbox } from "@/components/Lightbox";
-import { AddVisionModal } from "@/components/AddVisionModal";
+import { VisionModal } from "@/components/VisionModal";
 import { OWNERS, type Owner, type Vision } from "@/lib/types";
 
 export function BoardApp({ initialVisions }: { initialVisions: Vision[] }) {
   const [visions, setVisions] = useState(initialVisions);
   const [owner, setOwner] = useState<Owner>("sander");
   const [adding, setAdding] = useState(false);
+  const [editing, setEditing] = useState<Vision | null>(null);
   const [opened, setOpened] = useState<Vision | null>(null);
   const [arrivingId, setArrivingId] = useState<string | null>(null);
 
@@ -40,12 +41,23 @@ export function BoardApp({ initialVisions }: { initialVisions: Vision[] }) {
     [byOwner],
   );
 
-  const onCreated = useCallback((vision: Vision) => {
-    setVisions((current) => [vision, ...current]);
+  const onSaved = useCallback((vision: Vision, mode: "created" | "updated") => {
+    setVisions((current) =>
+      mode === "created"
+        ? [vision, ...current]
+        : current.map((item) => (item.id === vision.id ? vision : item)),
+    );
+    // Keep an open lightbox showing the edited record rather than a stale copy.
+    setOpened((current) => (current?.id === vision.id ? vision : current));
     setAdding(false);
+    setEditing(null);
+    // Follow the vision to whichever board it now belongs to.
     setOwner(vision.owner);
-    setArrivingId(vision.id);
-    window.setTimeout(() => setArrivingId(null), 2000);
+
+    if (mode === "created") {
+      setArrivingId(vision.id);
+      window.setTimeout(() => setArrivingId(null), 2000);
+    }
   }, []);
 
   const onDeleted = useCallback((id: string) => {
@@ -57,7 +69,10 @@ export function BoardApp({ initialVisions }: { initialVisions: Vision[] }) {
   // close handler, so a fresh closure on every render would tear the trap down
   // and re-grab focus each time anything above them re-rendered.
   const openAdd = useCallback(() => setAdding(true), []);
-  const closeAdd = useCallback(() => setAdding(false), []);
+  const closeModal = useCallback(() => {
+    setAdding(false);
+    setEditing(null);
+  }, []);
   const closeLightbox = useCallback(() => setOpened(null), []);
 
   return (
@@ -83,16 +98,18 @@ export function BoardApp({ initialVisions }: { initialVisions: Vision[] }) {
               visions={byOwner[owner]}
               arrivingId={arrivingId}
               onOpen={setOpened}
+              onEdit={setEditing}
               onAdd={openAdd}
             />
           </motion.div>
         </AnimatePresence>
       </main>
 
-      <AddVisionModal
-        open={adding}
-        onClose={closeAdd}
-        onCreated={onCreated}
+      <VisionModal
+        open={adding || editing !== null}
+        vision={editing}
+        onClose={closeModal}
+        onSaved={onSaved}
       />
 
       <Lightbox

@@ -9,9 +9,11 @@ type Props = {
   image: PreparedImage | null;
   onChange: (image: PreparedImage | null) => void;
   disabled?: boolean;
+  /** The photo already on the record, shown until a replacement is chosen. */
+  existing?: { url: string; width: number; height: number } | null;
 };
 
-export function ImageDropzone({ image, onChange, disabled }: Props) {
+export function ImageDropzone({ image, onChange, disabled, existing }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
   const [optimising, setOptimising] = useState(false);
@@ -44,7 +46,8 @@ export function ImageDropzone({ image, onChange, disabled }: Props) {
     }
   }
 
-  const preview = image?.previewUrl ?? instantPreview;
+  const preview = image?.previewUrl ?? instantPreview ?? existing?.url ?? null;
+  const showingExisting = !image && !instantPreview && Boolean(existing);
 
   return (
     <div>
@@ -97,6 +100,15 @@ export function ImageDropzone({ image, onChange, disabled }: Props) {
                   <p className="mt-0.5 text-[11px] text-parchment-faint">
                     {(image.originalBytes / (1024 * 1024)).toFixed(1)} MB →{" "}
                     {(image.file.size / 1024).toFixed(0)} KB
+                  </p>
+                </>
+              ) : showingExisting && existing ? (
+                <>
+                  <p className="text-sm text-parchment">
+                    {existing.width} × {existing.height}
+                  </p>
+                  <p className="mt-0.5 text-[11px] text-parchment-faint">
+                    The photo already on this vision
                   </p>
                 </>
               ) : null}

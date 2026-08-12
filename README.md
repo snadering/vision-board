@@ -8,6 +8,10 @@ out in a grid: every page load draws a fresh random seed and composes the board
 anew — scattered, tilted, gently overlapping, each card drifting on its own slow
 cycle.
 
+Hovering a card reveals a pencil in its corner; that opens the same form used to
+add a vision, pre-filled. Anything can change — the title, the keywords, the
+photo, and which of the two boards it lives on.
+
 ## Stack
 
 | Piece    | Choice                                                  |
@@ -107,7 +111,8 @@ URL if a project has transformations disabled.
 | `src/lib/session.ts`          | HMAC-SHA256 session token over an expiry, via Web Crypto. 90-day cookie.      |
 | `src/lib/prepare-image.ts`    | Browser-side pipeline: validate → decode → record natural size → downscale to 2400px → WebP q0.85 (JPEG fallback). |
 | `src/lib/layout.ts`           | Seeded scatter placement, overlap relaxation, drift parameters.               |
-| `src/app/api/visions/`        | List, create (upload + insert, with rollback of the object if the insert fails), delete. |
+| `src/app/api/visions/`        | List, create, edit and delete. Create rolls the uploaded object back out if the insert fails; edit uploads a replacement photo before touching the row and removes the old object only once the update has landed. |
+| `src/lib/vision-form.ts`      | Shared validation for create and edit. On edit the image is optional — omitting it keeps the stored photo. |
 | `src/app/api/keep-alive/`     | Cron target that touches `heartbeat`, guarded by `CRON_SECRET`.               |
 
 ### Auth

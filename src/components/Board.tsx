@@ -17,10 +17,18 @@ type Props = {
   visions: Vision[];
   arrivingId: string | null;
   onOpen: (vision: Vision) => void;
+  onEdit: (vision: Vision) => void;
   onAdd: () => void;
 };
 
-export function Board({ owner, visions, arrivingId, onOpen, onAdd }: Props) {
+export function Board({
+  owner,
+  visions,
+  arrivingId,
+  onOpen,
+  onEdit,
+  onAdd,
+}: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
   const isMobile = useMediaQuery("(max-width: 767px)");
@@ -91,6 +99,7 @@ export function Board({ owner, visions, arrivingId, onOpen, onAdd }: Props) {
                 index={index}
                 arriving={vision.id === arrivingId}
                 onOpen={onOpen}
+                onEdit={onEdit}
               />
             );
           })

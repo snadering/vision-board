@@ -14,9 +14,17 @@ type Props = {
   /** Newly added visions land with their own animation. */
   arriving: boolean;
   onOpen: (vision: Vision) => void;
+  onEdit: (vision: Vision) => void;
 };
 
-export function VisionCard({ vision, placement, index, arriving, onOpen }: Props) {
+export function VisionCard({
+  vision,
+  placement,
+  index,
+  arriving,
+  onOpen,
+  onEdit,
+}: Props) {
   const [src, setSrc] = useState(() => cardImageUrl(vision.image_url));
   const [loaded, setLoaded] = useState(false);
 
@@ -61,14 +69,14 @@ export function VisionCard({ vision, placement, index, arriving, onOpen }: Props
         }
       >
         <div
-          className="h-full w-full"
+          className="group/card relative h-full w-full"
           style={{ transform: `rotate(${placement.rotate}deg)` }}
         >
           <button
             type="button"
             onClick={() => onOpen(vision)}
             aria-label={`Open ${vision.title}`}
-            className="group relative block h-full w-full cursor-pointer overflow-hidden rounded-[var(--radius-glass)] border border-white/10 bg-white/5 shadow-[0_24px_60px_-32px_rgba(0,0,0,0.95)] transition-[transform,box-shadow] duration-500 ease-[var(--ease-soft)] hover:-translate-y-1.5 hover:scale-[1.02] hover:shadow-[0_40px_90px_-30px_rgba(0,0,0,1)] focus-visible:-translate-y-1.5"
+            className="group absolute inset-0 block cursor-pointer overflow-hidden rounded-[var(--radius-glass)] border border-white/10 bg-white/5 shadow-[0_24px_60px_-32px_rgba(0,0,0,0.95)] transition-[transform,box-shadow] duration-500 ease-[var(--ease-soft)] hover:-translate-y-1.5 hover:scale-[1.02] hover:shadow-[0_40px_90px_-30px_rgba(0,0,0,1)] focus-visible:-translate-y-1.5"
           >
             <Image
               src={src}
@@ -110,6 +118,36 @@ export function VisionCard({ vision, placement, index, arriving, onOpen }: Props
                 </ul>
               ) : null}
             </div>
+          </button>
+
+          {/*
+            A sibling of the card surface rather than a child: the card is
+            itself a button, and a button inside a button is invalid markup that
+            browsers resolve unpredictably. `card-affordance` keeps it hidden
+            until hover or keyboard focus on a pointer device, and permanently
+            visible on touch, where there is no hover to reveal it.
+          */}
+          <button
+            type="button"
+            onClick={() => onEdit(vision)}
+            aria-label={`Edit ${vision.title}`}
+            title="Edit"
+            className="card-affordance absolute top-2 right-2 z-10 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-white/15 bg-black/45 text-parchment-dim backdrop-blur-md transition-[opacity,color,background-color] duration-300 hover:bg-black/70 hover:text-ember-soft"
+          >
+            <svg
+              width="13"
+              height="13"
+              viewBox="0 0 16 16"
+              fill="none"
+              aria-hidden
+              stroke="currentColor"
+              strokeWidth="1.3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M11.2 2.3a1.6 1.6 0 0 1 2.3 2.3l-7.2 7.2-3 .7.7-3 7.2-7.2Z" />
+              <path d="M10.2 3.4 12.4 5.6" />
+            </svg>
           </button>
         </div>
       </div>

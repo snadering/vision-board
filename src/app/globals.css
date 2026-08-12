@@ -170,6 +170,28 @@
   animation-play-state: paused;
 }
 
+/*
+ * Controls on a card — currently the edit pencil. Hidden until the card is
+ * hovered or something inside it takes keyboard focus, so the board stays a
+ * board rather than a toolbar. Touch devices have no hover to reveal it with,
+ * so there it simply stays visible.
+ */
+.card-affordance {
+  opacity: 0;
+}
+
+.group\/card:hover .card-affordance,
+.group\/card:focus-within .card-affordance,
+.card-affordance:focus-visible {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .card-affordance {
+    opacity: 0.85;
+  }
+}
+
 @keyframes shimmer {
   0% {
     background-position: -200% 0;
