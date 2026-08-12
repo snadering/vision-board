@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { currentUser } from "@/lib/auth";
 import { getProfileByUsername } from "@/lib/profiles";
 import { listVisionsFor } from "@/lib/visions";
@@ -14,10 +14,12 @@ export async function generateMetadata({ params }: PageProps<"/u/[username]">) {
 export default async function BoardPage({ params }: PageProps<"/u/[username]">) {
   const { username } = await params;
 
-  const [viewer, profile] = await Promise.all([
-    currentUser(),
-    getProfileByUsername(username),
-  ]);
+  const viewer = await currentUser();
+  // Boards are not readable from outside at all, so this never reaches the
+  // database for a visitor who is not signed in.
+  if (!viewer) redirect(`/login?next=/u/${encodeURIComponent(username)}`);
+
+  const profile = await getProfileByUsername(username);
 
   // A blocked or still-pending account has no public board.
   if (!profile || profile.status !== "approved") notFound();

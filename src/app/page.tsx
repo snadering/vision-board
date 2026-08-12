@@ -2,15 +2,20 @@ import { currentUser } from "@/lib/auth";
 import { listDirectory, listByStatus } from "@/lib/profiles";
 import { SiteHeader } from "@/components/SiteHeader";
 import { Directory } from "@/components/Directory";
+import { SignedOutLanding } from "@/components/SignedOutLanding";
 
 export const metadata = {
   title: "Vision Board",
   description: "Everybody's dream boards, in one dim room.",
 };
 
-/** The front page: everyone, scattered. Open to anybody who finds the URL. */
+/** Everyone, scattered — but only once you are inside. */
 export default async function DirectoryPage() {
   const user = await currentUser();
+
+  // Who is here is not public information, so a visitor gets a front door.
+  if (!user) return <SignedOutLanding />;
+
   const [people, pending] = await Promise.all([
     listDirectory(),
     user?.is_admin ? listByStatus("pending") : Promise.resolve([]),

@@ -139,11 +139,13 @@ export function SettingsForm({ profile }: { profile: Profile }) {
 
           <div className="min-w-0 text-sm">
             <p className="text-parchment">
-              {boardPublic ? "Anyone can open my board" : "Only I can open my board"}
+              {boardPublic
+                ? "Anyone signed in can open my board"
+                : "Only I can open my board"}
             </p>
             <p className="mt-1 text-[11px] leading-relaxed text-parchment-faint">
               {boardPublic
-                ? "It appears in the directory and anyone can look through it."
+                ? "Other members can find it in the directory and look through it. The site itself is closed to anyone not signed in."
                 : "Your name still appears in the directory, with a lock. Note that the photos themselves stay reachable by direct link — private hides the board, not the image files."}
             </p>
           </div>
