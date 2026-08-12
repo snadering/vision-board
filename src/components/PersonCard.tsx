@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "motion/react";
 import type { Placement } from "@/lib/layout";
 import type { DirectoryEntry } from "@/lib/types";
 import { BLUR_DATA_URL, cardImageUrl } from "@/lib/image-url";
+import { CardScrim } from "@/components/CardScrim";
 
 type Props = {
   person: DirectoryEntry;
@@ -17,10 +18,29 @@ type Props = {
 };
 
 export function PersonCard({ person, placement, index, isYou }: Props) {
-  const [src, setSrc] = useState(() =>
-    person.avatar_url ? cardImageUrl(person.avatar_url, 600) : null,
+  // Tracks the stored URL, so a newly uploaded picture replaces the old one
+  // without waiting for a reload.
+  const [image, setImage] = useState(() => ({
+    from: person.avatar_url,
+    src: person.avatar_url ? cardImageUrl(person.avatar_url, 600) : null,
+    loaded: false,
+  }));
+  if (image.from !== person.avatar_url) {
+    setImage({
+      from: person.avatar_url,
+      src: person.avatar_url ? cardImageUrl(person.avatar_url, 600) : null,
+      loaded: false,
+    });
+  }
+
+  // An image already in the browser cache can finish before React attaches
+  // onLoad, in which case that event never fires and the card would sit at
+  // zero opacity forever. The ref catches that case on mount, and keying the
+  // element on its src makes the ref run again whenever the photo changes.
+  const markLoaded = useCallback(
+    () => setImage((current) => (current.loaded ? current : { ...current, loaded: true })),
+    [],
   );
-  const [loaded, setLoaded] = useState(false);
 
   return (
     <motion.div
@@ -61,23 +81,29 @@ export function PersonCard({ person, placement, index, isYou }: Props) {
             aria-label={`${person.username}'s board`}
             className="group relative block h-full w-full overflow-hidden rounded-[var(--radius-glass)] border border-white/10 bg-white/5 shadow-[0_24px_60px_-32px_rgba(0,0,0,0.95)] transition-[transform,box-shadow] duration-500 ease-[var(--ease-soft)] hover:-translate-y-1.5 hover:scale-[1.02] hover:shadow-[0_40px_90px_-30px_rgba(0,0,0,1)] focus-visible:-translate-y-1.5"
           >
-            {src ? (
+            {image.src ? (
               <Image
-                src={src}
+                key={image.src}
+                ref={(node) => {
+                  if (node?.complete && node.naturalWidth > 0) markLoaded();
+                }}
+                src={image.src}
                 alt=""
                 fill
                 sizes="(max-width: 767px) 84vw, 26vw"
                 placeholder="blur"
                 blurDataURL={BLUR_DATA_URL}
                 loading={index < 4 ? "eager" : "lazy"}
-                onLoad={() => setLoaded(true)}
-                onError={() => {
-                  if (person.avatar_url && src !== person.avatar_url) {
-                    setSrc(person.avatar_url);
-                  }
-                }}
+                onLoad={markLoaded}
+                onError={() =>
+                  setImage((current) =>
+                    !person.avatar_url || current.src === person.avatar_url
+                      ? current
+                      : { ...current, src: person.avatar_url },
+                  )
+                }
                 className={`object-cover transition-opacity duration-700 ${
-                  loaded ? "opacity-100" : "opacity-0"
+                  image.loaded ? "opacity-100" : "opacity-0"
                 }`}
               />
             ) : (
@@ -89,7 +115,7 @@ export function PersonCard({ person, placement, index, isYou }: Props) {
               </div>
             )}
 
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/85 via-black/45 to-transparent" />
+            <CardScrim />
 
             <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between gap-2 p-3 text-left sm:p-4">
               <div className="min-w-0">

@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import Image from "next/image";
 import { motion } from "motion/react";
 import type { Placement } from "@/lib/layout";
 import type { Vision } from "@/lib/types";
 import { BLUR_DATA_URL, cardImageUrl } from "@/lib/image-url";
+import { CardScrim } from "@/components/CardScrim";
 
 type Props = {
   vision: Vision;
@@ -28,8 +29,30 @@ export function VisionCard({
   onOpen,
   onEdit,
 }: Props) {
-  const [src, setSrc] = useState(() => cardImageUrl(vision.image_url));
-  const [loaded, setLoaded] = useState(false);
+  // Keyed on the stored URL rather than seeded once: swapping a vision's photo
+  // hands this component a new image_url, and a `useState` initialiser would
+  // never run again, leaving the old picture on screen until a reload.
+  const [image, setImage] = useState(() => ({
+    from: vision.image_url,
+    src: cardImageUrl(vision.image_url),
+    loaded: false,
+  }));
+  if (image.from !== vision.image_url) {
+    setImage({
+      from: vision.image_url,
+      src: cardImageUrl(vision.image_url),
+      loaded: false,
+    });
+  }
+
+  // An image already in the browser cache can finish before React attaches
+  // onLoad, in which case that event never fires and the card would sit at
+  // zero opacity forever. The ref catches that case on mount, and keying the
+  // element on its src makes the ref run again whenever the photo changes.
+  const markLoaded = useCallback(
+    () => setImage((current) => (current.loaded ? current : { ...current, loaded: true })),
+    [],
+  );
 
   return (
     <motion.div
@@ -82,26 +105,33 @@ export function VisionCard({
             className="group absolute inset-0 block cursor-pointer overflow-hidden rounded-[var(--radius-glass)] border border-white/10 bg-white/5 shadow-[0_24px_60px_-32px_rgba(0,0,0,0.95)] transition-[transform,box-shadow] duration-500 ease-[var(--ease-soft)] hover:-translate-y-1.5 hover:scale-[1.02] hover:shadow-[0_40px_90px_-30px_rgba(0,0,0,1)] focus-visible:-translate-y-1.5"
           >
             <Image
-              src={src}
+              key={image.src}
+              ref={(node) => {
+                if (node?.complete && node.naturalWidth > 0) markLoaded();
+              }}
+              src={image.src}
               alt={vision.title}
               fill
               sizes="(max-width: 767px) 84vw, (max-width: 1279px) 34vw, 26vw"
               placeholder="blur"
               blurDataURL={BLUR_DATA_URL}
               loading={index < 4 ? "eager" : "lazy"}
-              onLoad={() => setLoaded(true)}
+              onLoad={markLoaded}
               // If image transformations are unavailable on this project the
               // variant 400s; drop straight back to the untransformed original.
-              onError={() => {
-                if (src !== vision.image_url) setSrc(vision.image_url);
-              }}
+              onError={() =>
+                setImage((current) =>
+                  current.src === vision.image_url
+                    ? current
+                    : { ...current, src: vision.image_url },
+                )
+              }
               className={`object-cover transition-opacity duration-700 ${
-                loaded ? "opacity-100" : "opacity-0"
+                image.loaded ? "opacity-100" : "opacity-0"
               }`}
             />
 
-            {/* Scrim: keeps the title readable over a bright photo. */}
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/85 via-black/45 to-transparent" />
+            <CardScrim />
 
             <div className="pointer-events-none absolute inset-x-0 bottom-0 p-3 text-left sm:p-4">
               <h3 className="font-display text-lg leading-tight text-parchment drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)] sm:text-xl">
