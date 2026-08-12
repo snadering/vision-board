@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import type { Profile } from "@/lib/types";
@@ -17,6 +17,23 @@ export function ApprovalQueue({ pending, blocked, unclaimed }: Props) {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [mergeTarget, setMergeTarget] = useState<Record<string, string>>({});
+
+  // Re-runs this route's server render and swaps in the result, so the queue
+  // updates without the page reloading. `useTransition` is what makes the
+  // button able to say it is working: router.refresh() itself returns nothing
+  // to wait on.
+  const [checking, startChecking] = useTransition();
+  const [checkedAt, setCheckedAt] = useState<string | null>(null);
+
+  function check() {
+    setCheckedAt(
+      new Date().toLocaleTimeString(undefined, {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+    );
+    startChecking(() => router.refresh());
+  }
 
   async function act(id: string, action: string, mergeInto?: string) {
     if (busy) return;
@@ -56,9 +73,27 @@ export function ApprovalQueue({ pending, blocked, unclaimed }: Props) {
       ) : null}
 
       <section>
-        <h2 className="label-caps mb-3 text-parchment-faint">
-          Waiting ({pending.length})
-        </h2>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h2 className="label-caps text-parchment-faint">
+            Waiting ({pending.length})
+          </h2>
+
+          <div className="flex items-center gap-3">
+            {checkedAt ? (
+              <span className="text-[11px] text-parchment-faint tabular-nums">
+                checked {checkedAt}
+              </span>
+            ) : null}
+            <button
+              type="button"
+              onClick={check}
+              disabled={checking}
+              className="cursor-pointer rounded-full border border-white/12 px-4 py-1.5 text-xs text-parchment-dim transition-colors hover:bg-white/8 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {checking ? "Checking…" : "Check for new"}
+            </button>
+          </div>
+        </div>
 
         {pending.length === 0 ? (
           <p className="text-sm text-parchment-faint">Nobody is waiting.</p>
