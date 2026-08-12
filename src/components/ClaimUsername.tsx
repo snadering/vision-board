@@ -78,8 +78,7 @@ export function ClaimUsername({
           What should we call you?
         </h1>
         <p className="mt-4 text-xs leading-relaxed text-parchment-faint">
-          It becomes the address of your board, and everyone will see it.
-          Signed in as {email}.
+          This is how everyone will find your board. Signed in as {email}.
         </p>
       </div>
 
@@ -92,26 +91,24 @@ export function ClaimUsername({
           className={shaking ? "shake" : undefined}
           onAnimationEnd={() => setShaking(false)}
         >
-          <div className="glass flex items-center rounded-[var(--radius-glass)] px-5 py-4 transition-all duration-500 focus-within:border-ember/40 focus-within:shadow-[0_0_60px_-12px_color-mix(in_oklab,var(--color-ember)_45%,transparent)]">
-            <span className="text-sm text-parchment-faint">vision.skr.dk/u/</span>
-            <input
-              ref={inputRef}
-              id="username"
-              name="username"
-              type="text"
-              autoComplete="off"
-              autoCapitalize="none"
-              spellCheck={false}
-              maxLength={MAX_USERNAME_LENGTH}
-              value={username}
-              disabled={pending}
-              onChange={(event) => {
-                setUsername(event.target.value.toLowerCase());
-                if (error) setError(null);
-              }}
-              className="min-w-0 flex-1 bg-transparent text-sm text-parchment outline-none disabled:opacity-60"
-            />
-          </div>
+          <input
+            ref={inputRef}
+            id="username"
+            name="username"
+            type="text"
+            autoComplete="off"
+            autoCapitalize="none"
+            spellCheck={false}
+            maxLength={MAX_USERNAME_LENGTH}
+            value={username}
+            disabled={pending}
+            placeholder="yourname"
+            onChange={(event) => {
+              setUsername(event.target.value.toLowerCase());
+              if (error) setError(null);
+            }}
+            className="glass w-full rounded-[var(--radius-glass)] px-5 py-4 text-center text-sm text-parchment placeholder:text-parchment-faint/60 transition-all duration-500 focus:border-ember/40 focus:shadow-[0_0_60px_-12px_color-mix(in_oklab,var(--color-ember)_45%,transparent)] focus:outline-none disabled:opacity-60"
+          />
         </div>
 
         <div className="min-h-6">

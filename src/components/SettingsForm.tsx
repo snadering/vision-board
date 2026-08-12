@@ -68,23 +68,20 @@ export function SettingsForm({ profile }: { profile: Profile }) {
         <label htmlFor="username" className="label-caps mb-2 block text-parchment-faint">
           Username
         </label>
-        <div className="glass flex items-center rounded-xl px-4 py-3">
-          <span className="text-sm text-parchment-faint">/u/</span>
-          <input
-            id="username"
-            type="text"
-            value={username}
-            maxLength={MAX_USERNAME_LENGTH}
-            autoCapitalize="none"
-            spellCheck={false}
-            disabled={saving}
-            onChange={(event) => {
-              setUsername(event.target.value.toLowerCase());
-              setSaved(false);
-            }}
-            className="min-w-0 flex-1 bg-transparent text-sm text-parchment outline-none disabled:opacity-50"
-          />
-        </div>
+        <input
+          id="username"
+          type="text"
+          value={username}
+          maxLength={MAX_USERNAME_LENGTH}
+          autoCapitalize="none"
+          spellCheck={false}
+          disabled={saving}
+          onChange={(event) => {
+            setUsername(event.target.value.toLowerCase());
+            setSaved(false);
+          }}
+          className="glass w-full rounded-xl px-4 py-3 text-sm text-parchment transition-shadow duration-300 focus:shadow-[0_0_0_1px_color-mix(in_oklab,var(--color-ember)_28%,transparent)] focus:outline-none disabled:opacity-50"
+        />
         <p className="mt-2 text-[11px] text-parchment-faint">
           Changing this changes your board&rsquo;s address; old links stop working.
         </p>
