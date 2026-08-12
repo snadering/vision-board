@@ -1,4 +1,17 @@
-import type { Vision } from "@/lib/types";
+/**
+ * Anything the scatter can place: visions on a board, people in the directory.
+ * All it needs is an identity and an aspect ratio.
+ */
+export type LayoutItem = {
+  id: string;
+  width: number;
+  height: number;
+  /**
+   * Relative prominence, 1 being ordinary. The directory uses it to draw people
+   * with more visions a little larger.
+   */
+  weight?: number;
+};
 
 /**
  * Seeded scatter placement.
@@ -157,7 +170,7 @@ function relax(boxes: Placement[], containerWidth: number): void {
 }
 
 export function computeScatterLayout(
-  visions: readonly Vision[],
+  visions: readonly LayoutItem[],
   containerWidth: number,
   seed: number,
 ): Layout {
@@ -184,7 +197,7 @@ export function computeScatterLayout(
 
   const placements: Placement[] = ordered.map((vision, index) => {
     const scale = 0.85 + rnd() * 0.3;
-    let width = baseWidth * scale;
+    let width = baseWidth * scale * (vision.weight ?? 1);
 
     const aspect = vision.width / Math.max(vision.height, 1);
     let height = width / aspect;
@@ -253,7 +266,7 @@ export function computeScatterLayout(
  * on every load.
  */
 export function computeColumnLayout(
-  visions: readonly Vision[],
+  visions: readonly LayoutItem[],
   containerWidth: number,
   seed: number,
 ): Layout {

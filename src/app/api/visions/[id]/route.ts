@@ -1,12 +1,26 @@
 import { NextResponse } from "next/server";
-import { hasSession } from "@/lib/auth";
-import { deleteVision, updateVision } from "@/lib/visions";
+import { approvedUser } from "@/lib/auth";
+import { deleteVision, getVision, updateVision } from "@/lib/visions";
 import { parseVisionForm } from "@/lib/vision-form";
+import type { Profile, Vision } from "@/lib/types";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-const unauthorized = () =>
-  NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+/**
+ * Resolves a vision the caller is actually allowed to change.
+ *
+ * Someone else's vision answers 404 rather than 403: whether a given id exists
+ * is not the business of anyone who cannot touch it.
+ */
+async function ownedVision(
+  id: string,
+  user: Profile,
+): Promise<Vision | null> {
+  if (!UUID.test(id)) return null;
+  const vision = await getVision(id);
+  if (!vision || vision.user_id !== user.id) return null;
+  return vision;
+}
 
 const unknown = () => NextResponse.json({ error: "Unknown vision." }, { status: 404 });
 
@@ -14,10 +28,14 @@ export async function PATCH(
   request: Request,
   context: RouteContext<"/api/visions/[id]">,
 ) {
-  if (!(await hasSession())) return unauthorized();
+  const user = await approvedUser();
+  if (!user) {
+    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  }
 
   const { id } = await context.params;
-  if (!UUID.test(id)) return unknown();
+  const existing = await ownedVision(id, user);
+  if (!existing) return unknown();
 
   let form: FormData;
   try {
@@ -26,22 +44,19 @@ export async function PATCH(
     return NextResponse.json({ error: "Malformed upload." }, { status: 400 });
   }
 
-  // The image is optional here: no file means the photo stays as it is.
   const parsed = await parseVisionForm(form, { requireImage: false });
   if (!parsed.ok) {
     return NextResponse.json({ error: parsed.error }, { status: 400 });
   }
-  const { title, owner, tags, image } = parsed.value;
+  const { title, tags, image } = parsed.value;
 
   try {
-    const vision = await updateVision({
+    const vision = await updateVision(existing, {
       id,
-      owner,
       title,
       tags,
       ...(image ? { image } : {}),
     });
-    if (!vision) return unknown();
     return NextResponse.json({ vision });
   } catch (error) {
     console.error(error);
@@ -56,16 +71,17 @@ export async function DELETE(
   _request: Request,
   context: RouteContext<"/api/visions/[id]">,
 ) {
-  if (!(await hasSession())) return unauthorized();
-
-  const { id } = await context.params;
-  if (!UUID.test(id)) {
-    return NextResponse.json({ error: "Unknown vision." }, { status: 400 });
+  const user = await approvedUser();
+  if (!user) {
+    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
+  const { id } = await context.params;
+  const vision = await ownedVision(id, user);
+  if (!vision) return unknown();
+
   try {
-    const deleted = await deleteVision(id);
-    if (!deleted) return unknown();
+    await deleteVision(vision);
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error(error);

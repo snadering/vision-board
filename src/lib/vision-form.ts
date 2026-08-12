@@ -5,13 +5,14 @@ import {
   MAX_TITLE_LENGTH,
   MAX_UPLOAD_BYTES,
   UPLOAD_EXTENSION,
-  isOwner,
-  type Owner,
 } from "@/lib/types";
 
 /**
  * Shared parsing and validation for the create and edit endpoints. On edit the
  * image is optional — leaving it out keeps the photo already on the record.
+ *
+ * There is no owner field: a vision belongs to whoever is signed in, decided by
+ * the route from the session rather than by anything the client sends.
  */
 
 export type ParsedImage = {
@@ -24,7 +25,6 @@ export type ParsedImage = {
 
 export type ParsedVisionForm = {
   title: string;
-  owner: Owner;
   tags: string[];
   image: ParsedImage | null;
 };
@@ -43,9 +43,6 @@ export async function parseVisionForm(
   if (title.length < 1 || title.length > MAX_TITLE_LENGTH) {
     return fail(`Title must be between 1 and ${MAX_TITLE_LENGTH} characters.`);
   }
-
-  const owner = form.get("owner");
-  if (!isOwner(owner)) return fail("Pick whose vision this is.");
 
   let tags: string[] = [];
   const rawTags = form.get("tags");
@@ -66,7 +63,7 @@ export async function parseVisionForm(
   const file = form.get("file");
   if (!(file instanceof File) || file.size === 0) {
     if (requireImage) return fail("An image is required.");
-    return { ok: true, value: { title, owner, tags, image: null } };
+    return { ok: true, value: { title, tags, image: null } };
   }
 
   if (file.size > MAX_UPLOAD_BYTES) {
@@ -93,7 +90,6 @@ export async function parseVisionForm(
     ok: true,
     value: {
       title,
-      owner,
       tags,
       image: {
         bytes: await file.arrayBuffer(),

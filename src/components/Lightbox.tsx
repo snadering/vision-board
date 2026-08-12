@@ -5,15 +5,17 @@ import Image from "next/image";
 import { AnimatePresence, motion } from "motion/react";
 import { BLUR_DATA_URL } from "@/lib/image-url";
 import { useDialog } from "@/lib/use-dialog";
-import { OWNER_LABELS, type Vision } from "@/lib/types";
+import type { Vision } from "@/lib/types";
 
 type Props = {
   vision: Vision | null;
+  /** Removal is offered only on your own board. */
+  canEdit: boolean;
   onClose: () => void;
   onDeleted: (id: string) => void;
 };
 
-export function Lightbox({ vision, onClose, onDeleted }: Props) {
+export function Lightbox({ vision, canEdit, onClose, onDeleted }: Props) {
   const open = vision !== null;
   const ref = useDialog(open, onClose);
   const [confirming, setConfirming] = useState(false);
@@ -98,10 +100,7 @@ export function Lightbox({ vision, onClose, onDeleted }: Props) {
 
             <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-end sm:justify-between sm:p-6">
               <div className="min-w-0">
-                <p className="label-caps text-parchment-faint">
-                  {OWNER_LABELS[vision.owner]}
-                </p>
-                <h2 className="mt-1.5 font-display text-3xl leading-tight text-parchment sm:text-4xl">
+                <h2 className="font-display text-3xl leading-tight text-parchment sm:text-4xl">
                   {vision.title}
                 </h2>
                 {vision.tags.length > 0 ? (
@@ -125,7 +124,7 @@ export function Lightbox({ vision, onClose, onDeleted }: Props) {
                   </p>
                 ) : null}
 
-                {confirming ? (
+                {canEdit && confirming ? (
                   <>
                     <button
                       type="button"
@@ -144,7 +143,7 @@ export function Lightbox({ vision, onClose, onDeleted }: Props) {
                       {deleting ? "Removing…" : "Yes, remove it"}
                     </button>
                   </>
-                ) : (
+                ) : canEdit ? (
                   <button
                     type="button"
                     onClick={() => setConfirming(true)}
@@ -152,7 +151,7 @@ export function Lightbox({ vision, onClose, onDeleted }: Props) {
                   >
                     Remove
                   </button>
-                )}
+                ) : null}
 
                 <button
                   type="button"

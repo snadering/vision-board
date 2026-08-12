@@ -1,15 +1,17 @@
 import { NextResponse } from "next/server";
-import { hasSession } from "@/lib/auth";
-import { createVision, listVisions } from "@/lib/visions";
+import { approvedUser } from "@/lib/auth";
+import { createVision, listVisionsFor } from "@/lib/visions";
 import { parseVisionForm } from "@/lib/vision-form";
 
+/** Your own visions. Other people's boards are rendered server-side. */
 export async function GET() {
-  if (!(await hasSession())) {
+  const user = await approvedUser();
+  if (!user) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
   try {
-    return NextResponse.json({ visions: await listVisions() });
+    return NextResponse.json({ visions: await listVisionsFor(user.id) });
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: "Could not load visions." }, { status: 500 });
@@ -17,7 +19,8 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  if (!(await hasSession())) {
+  const user = await approvedUser();
+  if (!user) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
@@ -32,11 +35,13 @@ export async function POST(request: Request) {
   if (!parsed.ok) {
     return NextResponse.json({ error: parsed.error }, { status: 400 });
   }
-  const { title, owner, tags, image } = parsed.value;
+  const { title, tags, image } = parsed.value;
 
   try {
+    // A vision belongs to whoever is signed in; there is no owner field to send,
+    // and therefore nothing a caller could claim to be.
     const vision = await createVision({
-      owner,
+      userId: user.id,
       title,
       tags,
       width: image!.width,

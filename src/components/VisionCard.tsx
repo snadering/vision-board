@@ -13,6 +13,8 @@ type Props = {
   index: number;
   /** Newly added visions land with their own animation. */
   arriving: boolean;
+  /** Editing controls are omitted entirely for anyone but the owner. */
+  canEdit: boolean;
   onOpen: (vision: Vision) => void;
   onEdit: (vision: Vision) => void;
 };
@@ -22,6 +24,7 @@ export function VisionCard({
   placement,
   index,
   arriving,
+  canEdit,
   onOpen,
   onEdit,
 }: Props) {
@@ -127,6 +130,7 @@ export function VisionCard({
             until hover or keyboard focus on a pointer device, and permanently
             visible on touch, where there is no hover to reveal it.
           */}
+          {canEdit ? (
           <button
             type="button"
             onClick={() => onEdit(vision)}
@@ -149,6 +153,7 @@ export function VisionCard({
               <path d="M10.2 3.4 12.4 5.6" />
             </svg>
           </button>
+          ) : null}
         </div>
       </div>
     </motion.div>
