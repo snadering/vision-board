@@ -45,16 +45,25 @@ create index if not exists visions_user_idx on visions (user_id, created_at desc
 alter table visions alter column owner drop not null;
 
 -- The two people who were hard-coded into the old schema become the first two
--- accounts. Sander's email is known, so his profile is claimed on first sign-in
--- automatically; Jessica's is left unclaimed and gets linked from /admin when
--- she signs in.
+-- accounts, each addressed to the Google account that will claim it. Signing in
+-- with a matching email attaches that person to the board and its existing
+-- visions on the spot — no second account, and nothing to link by hand.
+--
+-- Until each is claimed they are deliberately absent from the directory (see
+-- `listDirectory`), so the front page never shows a person nobody has signed
+-- in as.
 insert into profiles (username, email, status, is_admin)
 values ('sander', 'sanderroust@gmail.com', 'approved', true)
-on conflict (username) do nothing;
+on conflict (username) do update
+  set email = excluded.email,
+      status = excluded.status,
+      is_admin = excluded.is_admin;
 
-insert into profiles (username, status)
-values ('jessica', 'approved')
-on conflict (username) do nothing;
+insert into profiles (username, email, status)
+values ('jessica', 'jess@tuohy.com', 'approved')
+on conflict (username) do update
+  set email = excluded.email,
+      status = excluded.status;
 
 -- Attach every existing vision to its person. Re-runnable: only fills the gaps,
 -- so it can be run again at cutover to catch anything added in the meantime.

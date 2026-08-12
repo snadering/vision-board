@@ -50,7 +50,12 @@ export async function usernameTaken(username: string): Promise<boolean> {
 }
 
 /**
- * Everyone approved, with their vision counts.
+ * Everyone approved *and claimed*, with their vision counts.
+ *
+ * A profile with no `google_sub` is a board waiting for its owner — created by
+ * the migration, not by a person signing in — and showing one in the directory
+ * would put somebody on the front page who has never been here. They appear the
+ * moment they first sign in.
  *
  * The counts are tallied in memory from a single id-only query rather than a
  * grouped one, which is the right trade at this size — it is one round trip and
@@ -66,6 +71,7 @@ export async function listDirectory(): Promise<DirectoryEntry[]> {
         .from("profiles")
         .select("id, username, avatar_url, board_public")
         .eq("status", "approved")
+        .not("google_sub", "is", null)
         .order("created_at", { ascending: true }),
       db.from("visions").select("user_id"),
     ]);
