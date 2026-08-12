@@ -1,9 +1,16 @@
 "use client";
 
 import { motion } from "motion/react";
-import { OWNER_LABELS, type Owner } from "@/lib/types";
 
-export function EmptyState({ owner, onAdd }: { owner: Owner; onAdd: () => void }) {
+export function EmptyState({
+  ownerName,
+  canEdit,
+  onAdd,
+}: {
+  ownerName: string;
+  canEdit: boolean;
+  onAdd: () => void;
+}) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -46,20 +53,23 @@ export function EmptyState({ owner, onAdd }: { owner: Owner; onAdd: () => void }
       </svg>
 
       <h2 className="font-display text-3xl text-parchment sm:text-4xl">
-        {OWNER_LABELS[owner]}&rsquo;s board is still quiet
+        {canEdit ? "Your board is still empty" : `${ownerName}'s board is still quiet`}
       </h2>
       <p className="mt-3 max-w-sm text-sm leading-relaxed text-parchment-faint">
-        Every board starts with one dream pinned somewhere in the dark. Add the
-        first and the rest will find their way around it.
+        {canEdit
+          ? "Every board starts with one dream pinned somewhere in the dark. Add the first and the rest will find their way around it."
+          : "Nothing has been pinned here yet. Come back when there is."}
       </p>
 
-      <button
-        type="button"
-        onClick={onAdd}
-        className="mt-8 cursor-pointer rounded-full border border-ember/30 bg-ember/10 px-6 py-2.5 text-sm text-ember-soft transition-all duration-300 hover:bg-ember/20 active:scale-[0.98]"
-      >
-        Add the first vision
-      </button>
+      {canEdit ? (
+        <button
+          type="button"
+          onClick={onAdd}
+          className="mt-8 cursor-pointer rounded-full border border-ember/30 bg-ember/10 px-6 py-2.5 text-sm text-ember-soft transition-all duration-300 hover:bg-ember/20 active:scale-[0.98]"
+        >
+          Add the first vision
+        </button>
+      ) : null}
     </motion.div>
   );
 }

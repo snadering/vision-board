@@ -1,19 +1,34 @@
 import "server-only";
 import { STORAGE_BUCKET, supabase } from "@/lib/supabase";
-import type { Owner, Vision } from "@/lib/types";
+import type { Vision } from "@/lib/types";
 
-export async function listVisions(): Promise<Vision[]> {
+const COLUMNS =
+  "id, user_id, title, image_path, image_url, width, height, tags, created_at";
+
+export async function listVisionsFor(userId: string): Promise<Vision[]> {
   const { data, error } = await supabase()
     .from("visions")
-    .select("*")
+    .select(COLUMNS)
+    .eq("user_id", userId)
     .order("created_at", { ascending: false });
 
   if (error) throw new Error(`Could not load visions: ${error.message}`);
   return (data ?? []) as Vision[];
 }
 
+export async function getVision(id: string): Promise<Vision | null> {
+  const { data, error } = await supabase()
+    .from("visions")
+    .select(COLUMNS)
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error) throw new Error(`Could not load that vision: ${error.message}`);
+  return (data as Vision) ?? null;
+}
+
 type NewVision = {
-  owner: Owner;
+  userId: string;
   title: string;
   tags: string[];
   width: number;
@@ -25,18 +40,14 @@ type NewVision = {
 
 export async function createVision(input: NewVision): Promise<Vision> {
   const db = supabase();
-  const path = `${input.owner}/${crypto.randomUUID()}.${input.extension}`;
+  const path = `${input.userId}/${crypto.randomUUID()}.${input.extension}`;
 
-  const upload = await db.storage
-    .from(STORAGE_BUCKET)
-    .upload(path, input.bytes, {
-      contentType: input.contentType,
-      cacheControl: "31536000",
-      upsert: false,
-    });
-  if (upload.error) {
-    throw new Error(`Upload failed: ${upload.error.message}`);
-  }
+  const upload = await db.storage.from(STORAGE_BUCKET).upload(path, input.bytes, {
+    contentType: input.contentType,
+    cacheControl: "31536000",
+    upsert: false,
+  });
+  if (upload.error) throw new Error(`Upload failed: ${upload.error.message}`);
 
   const {
     data: { publicUrl },
@@ -45,7 +56,7 @@ export async function createVision(input: NewVision): Promise<Vision> {
   const { data, error } = await db
     .from("visions")
     .insert({
-      owner: input.owner,
+      user_id: input.userId,
       title: input.title,
       image_path: path,
       image_url: publicUrl,
@@ -53,7 +64,7 @@ export async function createVision(input: NewVision): Promise<Vision> {
       height: input.height,
       tags: input.tags,
     })
-    .select("*")
+    .select(COLUMNS)
     .single();
 
   if (error || !data) {
@@ -67,7 +78,6 @@ export async function createVision(input: NewVision): Promise<Vision> {
 
 type VisionUpdate = {
   id: string;
-  owner: Owner;
   title: string;
   tags: string[];
   /** Omitted when the photo is being kept as it is. */
@@ -81,35 +91,23 @@ type VisionUpdate = {
 };
 
 /**
- * Returns null when no row matched, so the caller can answer 404.
+ * Callers must have already established that this vision belongs to the person
+ * asking — see `ownedVision` in the route.
  *
  * A replaced photo is uploaded before the row is touched and the old object is
- * removed only once the update has succeeded: at no point is the record left
- * pointing at an object that isn't there. A failed update takes the freshly
- * uploaded object back out, leaving the original photo intact.
+ * removed only once the update has succeeded, so the record never points at a
+ * missing file, and a failed update leaves the original photo intact.
  */
-export async function updateVision(input: VisionUpdate): Promise<Vision | null> {
+export async function updateVision(
+  existing: Vision,
+  input: VisionUpdate,
+): Promise<Vision> {
   const db = supabase();
-
-  const { data: existing, error: lookupError } = await db
-    .from("visions")
-    .select("image_path")
-    .eq("id", input.id)
-    .maybeSingle();
-
-  if (lookupError) throw new Error(`Could not find vision: ${lookupError.message}`);
-  if (!existing) return null;
-
-  const previousPath = existing.image_path as string;
-  const patch: Record<string, unknown> = {
-    owner: input.owner,
-    title: input.title,
-    tags: input.tags,
-  };
+  const patch: Record<string, unknown> = { title: input.title, tags: input.tags };
 
   let uploadedPath: string | null = null;
   if (input.image) {
-    uploadedPath = `${input.owner}/${crypto.randomUUID()}.${input.image.extension}`;
+    uploadedPath = `${existing.user_id}/${crypto.randomUUID()}.${input.image.extension}`;
 
     const upload = await db.storage
       .from(STORAGE_BUCKET)
@@ -134,7 +132,7 @@ export async function updateVision(input: VisionUpdate): Promise<Vision | null> 
     .from("visions")
     .update(patch)
     .eq("id", input.id)
-    .select("*")
+    .select(COLUMNS)
     .single();
 
   if (error || !data) {
@@ -142,32 +140,20 @@ export async function updateVision(input: VisionUpdate): Promise<Vision | null> 
     throw new Error(`Could not save changes: ${error?.message ?? "no row returned"}`);
   }
 
-  if (uploadedPath && previousPath !== uploadedPath) {
-    // The row no longer references it, so the old photo is safe to drop.
-    await db.storage.from(STORAGE_BUCKET).remove([previousPath]);
+  if (uploadedPath && existing.image_path !== uploadedPath) {
+    await db.storage.from(STORAGE_BUCKET).remove([existing.image_path]);
   }
 
   return data as Vision;
 }
 
-/** Returns false when no row matched, so the caller can answer 404. */
-export async function deleteVision(id: string): Promise<boolean> {
+export async function deleteVision(vision: Vision): Promise<void> {
   const db = supabase();
 
-  const { data: existing, error: lookupError } = await db
-    .from("visions")
-    .select("image_path")
-    .eq("id", id)
-    .maybeSingle();
+  const { error } = await db.from("visions").delete().eq("id", vision.id);
+  if (error) throw new Error(`Could not delete that vision: ${error.message}`);
 
-  if (lookupError) throw new Error(`Could not find vision: ${lookupError.message}`);
-  if (!existing) return false;
-
-  const { error } = await db.from("visions").delete().eq("id", id);
-  if (error) throw new Error(`Could not delete vision: ${error.message}`);
-
-  // The row is the source of truth; a failed object removal is not worth failing
-  // the request over, it just leaves a stray file.
-  await db.storage.from(STORAGE_BUCKET).remove([existing.image_path as string]);
-  return true;
+  // The row is the source of truth; a failed object removal leaves a stray file
+  // but is not worth failing the request over.
+  await db.storage.from(STORAGE_BUCKET).remove([vision.image_path]);
 }

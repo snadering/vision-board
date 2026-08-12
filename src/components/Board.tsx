@@ -10,21 +10,26 @@ import {
   type Layout,
 } from "@/lib/layout";
 import { useMediaQuery } from "@/lib/use-media-query";
-import type { Owner, Vision } from "@/lib/types";
+import type { Vision } from "@/lib/types";
 
 type Props = {
-  owner: Owner;
+  /** Identity of the board being shown; a new one re-seeds the composition. */
+  boardKey: string;
   visions: Vision[];
   arrivingId: string | null;
+  canEdit: boolean;
+  ownerName: string;
   onOpen: (vision: Vision) => void;
   onEdit: (vision: Vision) => void;
   onAdd: () => void;
 };
 
 export function Board({
-  owner,
+  boardKey,
   visions,
   arrivingId,
+  canEdit,
+  ownerName,
   onOpen,
   onEdit,
   onAdd,
@@ -37,9 +42,12 @@ export function Board({
   // tab. The seed is drawn during render rather than in an effect, which is safe
   // because nothing is placed until a measured width arrives — and a width only
   // arrives from the ResizeObserver, i.e. on the client, after hydration.
-  const [seedState, setSeedState] = useState(() => ({ owner, seed: randomSeed() }));
-  if (seedState.owner !== owner) {
-    setSeedState({ owner, seed: randomSeed() });
+  const [seedState, setSeedState] = useState(() => ({
+    boardKey,
+    seed: randomSeed(),
+  }));
+  if (seedState.boardKey !== boardKey) {
+    setSeedState({ boardKey, seed: randomSeed() });
   }
   const seed = seedState.seed;
 
@@ -85,7 +93,9 @@ export function Board({
         opacity: empty || layout ? 1 : 0,
       }}
     >
-      {empty ? <EmptyState owner={owner} onAdd={onAdd} /> : null}
+      {empty ? (
+        <EmptyState ownerName={ownerName} canEdit={canEdit} onAdd={onAdd} />
+      ) : null}
 
       {!empty && layout
         ? layout.placements.map((placement, index) => {
@@ -98,6 +108,7 @@ export function Board({
                 placement={placement}
                 index={index}
                 arriving={vision.id === arrivingId}
+                canEdit={canEdit}
                 onOpen={onOpen}
                 onEdit={onEdit}
               />
