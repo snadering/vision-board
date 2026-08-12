@@ -1,0 +1,98 @@
+"use client";
+
+import { useCallback, useMemo, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
+import { Nav } from "@/components/Nav";
+import { Board } from "@/components/Board";
+import { Lightbox } from "@/components/Lightbox";
+import { AddVisionModal } from "@/components/AddVisionModal";
+import { OWNERS, type Owner, type Vision } from "@/lib/types";
+
+export function BoardApp({ initialVisions }: { initialVisions: Vision[] }) {
+  const [visions, setVisions] = useState(initialVisions);
+  const [owner, setOwner] = useState<Owner>("sander");
+  const [adding, setAdding] = useState(false);
+  const [opened, setOpened] = useState<Vision | null>(null);
+  const [arrivingId, setArrivingId] = useState<string | null>(null);
+
+  // Server data wins if the route is refreshed underneath us. Adjusting state
+  // during render (rather than in an effect) avoids a throwaway pass with stale
+  // cards on screen.
+  const [serverVisions, setServerVisions] = useState(initialVisions);
+  if (serverVisions !== initialVisions) {
+    setServerVisions(initialVisions);
+    setVisions(initialVisions);
+  }
+
+  const byOwner = useMemo(() => {
+    const grouped = Object.fromEntries(
+      OWNERS.map((person) => [person, [] as Vision[]]),
+    ) as Record<Owner, Vision[]>;
+    for (const vision of visions) grouped[vision.owner]?.push(vision);
+    return grouped;
+  }, [visions]);
+
+  const counts = useMemo(
+    () =>
+      Object.fromEntries(
+        OWNERS.map((person) => [person, byOwner[person].length]),
+      ) as Record<Owner, number>,
+    [byOwner],
+  );
+
+  const onCreated = useCallback((vision: Vision) => {
+    setVisions((current) => [vision, ...current]);
+    setAdding(false);
+    setOwner(vision.owner);
+    setArrivingId(vision.id);
+    window.setTimeout(() => setArrivingId(null), 2000);
+  }, []);
+
+  const onDeleted = useCallback((id: string) => {
+    setVisions((current) => current.filter((vision) => vision.id !== id));
+    setOpened(null);
+  }, []);
+
+  return (
+    <>
+      <Nav
+        owner={owner}
+        onOwnerChange={setOwner}
+        onAdd={() => setAdding(true)}
+        counts={counts}
+      />
+
+      <main className="mx-auto w-full max-w-7xl grow px-4 pt-4 pb-24 sm:px-8">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={owner}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+          >
+            <Board
+              owner={owner}
+              visions={byOwner[owner]}
+              arrivingId={arrivingId}
+              onOpen={setOpened}
+              onAdd={() => setAdding(true)}
+            />
+          </motion.div>
+        </AnimatePresence>
+      </main>
+
+      <AddVisionModal
+        open={adding}
+        onClose={() => setAdding(false)}
+        onCreated={onCreated}
+      />
+
+      <Lightbox
+        vision={opened}
+        onClose={() => setOpened(null)}
+        onDeleted={onDeleted}
+      />
+    </>
+  );
+}

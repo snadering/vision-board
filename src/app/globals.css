@@ -1,0 +1,233 @@
+@import "tailwindcss";
+
+@theme {
+  /* Ground. Near-black, very slightly warm — a dim room, not a dashboard. */
+  --color-ink-900: #0b0a0c;
+  --color-ink-800: #131117;
+  --color-ink-700: #1b1820;
+
+  /* The blobs that drift behind everything. */
+  --color-plum: #2a1b3d;
+  --color-rose-dust: #8c5a6b;
+  --color-amber-warm: #7a5230;
+
+  /* Interactive accent: warm rose through to gold. */
+  --color-ember: #e6a380;
+  --color-ember-soft: #f0c3a8;
+  --color-blush: #d98d9c;
+
+  /* Type. Never pure white. */
+  --color-parchment: #f2ece8;
+  --color-parchment-dim: #cdc2bd;
+  --color-parchment-faint: #9a8f8b;
+
+  --font-display: var(--font-instrument-serif), ui-serif, Georgia, serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+
+  --radius-glass: 18px;
+
+  --ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@layer base {
+  html {
+    background-color: var(--color-ink-900);
+    color-scheme: dark;
+  }
+
+  body {
+    /*
+     * Deliberately transparent. The atmosphere layer sits at z-index -10 inside
+     * the body, and a painted body background would cover it: negative-z
+     * children paint before in-flow block backgrounds. The ground colour lives
+     * on <html> instead.
+     */
+    background-color: transparent;
+    color: var(--color-parchment);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  ::selection {
+    background-color: color-mix(in oklab, var(--color-ember) 35%, transparent);
+    color: var(--color-parchment);
+  }
+
+  :focus-visible {
+    outline: 2px solid color-mix(in oklab, var(--color-ember) 70%, transparent);
+    outline-offset: 3px;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: color-mix(in oklab, var(--color-parchment) 12%, transparent);
+    border-radius: 999px;
+    border: 3px solid var(--color-ink-900);
+  }
+}
+
+@utility glass {
+  background: color-mix(in oklab, white 5%, transparent);
+  border: 1px solid color-mix(in oklab, white 10%, transparent);
+  backdrop-filter: blur(18px) saturate(1.1);
+  -webkit-backdrop-filter: blur(18px) saturate(1.1);
+}
+
+@utility label-caps {
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  font-size: 0.625rem;
+  font-weight: 500;
+}
+
+/* --- Atmosphere ---------------------------------------------------------- */
+
+/*
+ * The blobs move on a scale of minutes, far slower than anything in the
+ * foreground, so the background reads as light rather than as motion.
+ */
+@keyframes blob-a {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(6vw, 4vh, 0) scale(1.12);
+  }
+}
+
+@keyframes blob-b {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1.05);
+  }
+  50% {
+    transform: translate3d(-7vw, -5vh, 0) scale(0.94);
+  }
+}
+
+@keyframes blob-c {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(0.96);
+  }
+  50% {
+    transform: translate3d(4vw, -6vh, 0) scale(1.1);
+  }
+}
+
+.blob {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(90px);
+  will-change: transform;
+}
+
+/* --- Card drift ----------------------------------------------------------- */
+
+/*
+ * Drift runs as a CSS animation rather than through the animation library:
+ * a negative `animation-delay` puts every card at a different point of its own
+ * cycle on the very first frame, which is what stops thirty cards from breathing
+ * in unison. Hovering pauses the cycle in place instead of snapping it home.
+ */
+@keyframes drift {
+  0% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  25% {
+    transform: translate3d(var(--drift-x), calc(var(--drift-y) * -0.6), 0)
+      rotate(var(--drift-r));
+  }
+  50% {
+    transform: translate3d(calc(var(--drift-x) * -0.4), var(--drift-y), 0)
+      rotate(calc(var(--drift-r) * -0.7));
+  }
+  75% {
+    transform: translate3d(calc(var(--drift-x) * -0.9), calc(var(--drift-y) * 0.3), 0)
+      rotate(calc(var(--drift-r) * 0.4));
+  }
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+}
+
+.drift {
+  animation: drift var(--drift-duration, 24s) ease-in-out infinite;
+  animation-delay: var(--drift-delay, 0s);
+  will-change: transform;
+}
+
+.drift-host:hover .drift,
+.drift-host:focus-within .drift {
+  animation-play-state: paused;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.shimmer {
+  background-image: linear-gradient(
+    100deg,
+    transparent 20%,
+    color-mix(in oklab, white 10%, transparent) 45%,
+    transparent 70%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.8s linear infinite;
+}
+
+@keyframes shake {
+  10%,
+  90% {
+    transform: translateX(-2px);
+  }
+  20%,
+  80% {
+    transform: translateX(4px);
+  }
+  30%,
+  50%,
+  70% {
+    transform: translateX(-6px);
+  }
+  40%,
+  60% {
+    transform: translateX(6px);
+  }
+}
+
+.shake {
+  animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /*
+   * The scattered composition stays exactly as placed; only the movement goes.
+   */
+  .drift,
+  .blob,
+  .shimmer,
+  .shake {
+    animation: none !important;
+  }
+
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+  }
+}
