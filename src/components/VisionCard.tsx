@@ -134,7 +134,7 @@ export function VisionCard({
             <CardScrim />
 
             <div className="pointer-events-none absolute inset-x-0 bottom-0 p-3 text-left sm:p-4">
-              <h3 className="font-display text-lg leading-tight text-parchment drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)] sm:text-xl">
+              <h3 className="title-shadow font-display text-lg leading-tight text-parchment sm:text-xl">
                 {vision.title}
               </h3>
 
