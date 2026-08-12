@@ -13,7 +13,13 @@ import {
   type OAuthStatePayload,
   type SignupPayload,
 } from "@/lib/session";
-import { getProfileByEmail, getProfileByGoogleSub, claimProfile } from "@/lib/profiles";
+import {
+  claimProfile,
+  getProfileByEmail,
+  getProfileByGoogleSub,
+  importGoogleAvatar,
+  updateProfile,
+} from "@/lib/profiles";
 
 const secure = () => process.env.NODE_ENV === "production";
 
@@ -87,6 +93,19 @@ export async function GET(request: Request) {
     }
 
     if (profile) {
+      // A profile seeded by the migration has never had a picture. Borrow the
+      // one Google offers the first time its owner appears, but never replace a
+      // picture somebody has chosen for themselves.
+      if (!profile.avatar_url && identity.picture) {
+        const avatar = await importGoogleAvatar(profile.id, identity.picture);
+        if (avatar) {
+          await updateProfile(profile.id, {
+            avatar_url: avatar.url,
+            avatar_path: avatar.path,
+          });
+        }
+      }
+
       const destination =
         profile.status === "approved" ? next : "/pending";
       const response = NextResponse.redirect(new URL(destination, origin));
