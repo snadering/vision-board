@@ -53,12 +53,19 @@ export function BoardApp({ initialVisions }: { initialVisions: Vision[] }) {
     setOpened(null);
   }, []);
 
+  // Stable identities: both dialogs key their Escape/focus-trap effect on the
+  // close handler, so a fresh closure on every render would tear the trap down
+  // and re-grab focus each time anything above them re-rendered.
+  const openAdd = useCallback(() => setAdding(true), []);
+  const closeAdd = useCallback(() => setAdding(false), []);
+  const closeLightbox = useCallback(() => setOpened(null), []);
+
   return (
     <>
       <Nav
         owner={owner}
         onOwnerChange={setOwner}
-        onAdd={() => setAdding(true)}
+        onAdd={openAdd}
         counts={counts}
       />
 
@@ -76,7 +83,7 @@ export function BoardApp({ initialVisions }: { initialVisions: Vision[] }) {
               visions={byOwner[owner]}
               arrivingId={arrivingId}
               onOpen={setOpened}
-              onAdd={() => setAdding(true)}
+              onAdd={openAdd}
             />
           </motion.div>
         </AnimatePresence>
@@ -84,13 +91,13 @@ export function BoardApp({ initialVisions }: { initialVisions: Vision[] }) {
 
       <AddVisionModal
         open={adding}
-        onClose={() => setAdding(false)}
+        onClose={closeAdd}
         onCreated={onCreated}
       />
 
       <Lightbox
         vision={opened}
-        onClose={() => setOpened(null)}
+        onClose={closeLightbox}
         onDeleted={onDeleted}
       />
     </>

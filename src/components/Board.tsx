@@ -61,20 +61,25 @@ export function Board({ owner, visions, arrivingId, onOpen, onAdd }: Props) {
     [visions],
   );
 
-  if (visions.length === 0) {
-    return <EmptyState owner={owner} onAdd={onAdd} />;
-  }
+  const empty = visions.length === 0;
 
   return (
+    // The measured container is always mounted, empty board or not. Returning
+    // early here instead would leave the ResizeObserver with nothing to observe,
+    // and since its effect runs once on mount it would never attach — the first
+    // vision added to an empty board would then land in a board still held at
+    // zero width, invisible until a reload.
     <div
       ref={containerRef}
       className="relative w-full transition-opacity duration-700 ease-[var(--ease-soft)]"
       style={{
-        height: layout ? layout.height : "60vh",
-        opacity: layout ? 1 : 0,
+        height: empty ? "auto" : layout ? layout.height : "60vh",
+        opacity: empty || layout ? 1 : 0,
       }}
     >
-      {layout
+      {empty ? <EmptyState owner={owner} onAdd={onAdd} /> : null}
+
+      {!empty && layout
         ? layout.placements.map((placement, index) => {
             const vision = byId.get(placement.id);
             if (!vision) return null;
