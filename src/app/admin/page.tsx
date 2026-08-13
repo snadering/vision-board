@@ -7,7 +7,7 @@ import { ApprovalQueue } from "@/components/ApprovalQueue";
 import { InviteLinks } from "@/components/InviteLinks";
 import { MemberList } from "@/components/MemberList";
 
-export const metadata = { title: "People — Vision Board" };
+export const metadata = { title: "Admin — Vision Board" };
 
 export default async function AdminPage() {
   const admin = await adminUser();
@@ -29,7 +29,7 @@ export default async function AdminPage() {
       <SiteHeader user={admin} pendingCount={pending.length} />
       <main className="mx-auto w-full max-w-2xl grow px-4 pt-2 pb-24 sm:px-8">
         <h1 className="mb-2 font-display text-4xl leading-none text-parchment sm:text-5xl">
-          People
+          Admin
         </h1>
         <p className="mb-8 text-sm text-parchment-faint">
           Hand out a link and people let themselves in; anyone arriving without
