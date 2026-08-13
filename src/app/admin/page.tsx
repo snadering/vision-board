@@ -1,8 +1,10 @@
 import { notFound } from "next/navigation";
 import { adminUser } from "@/lib/auth";
 import { listByStatus, listUnclaimed } from "@/lib/profiles";
+import { listInvites } from "@/lib/invites";
 import { SiteHeader } from "@/components/SiteHeader";
 import { ApprovalQueue } from "@/components/ApprovalQueue";
+import { InviteLinks } from "@/components/InviteLinks";
 
 export const metadata = { title: "Queue — Vision Board" };
 
@@ -11,10 +13,11 @@ export default async function AdminPage() {
   // Not an admin, not a page: no hint that there is anything here.
   if (!admin) notFound();
 
-  const [pending, blocked, unclaimed] = await Promise.all([
+  const [pending, blocked, unclaimed, invites] = await Promise.all([
     listByStatus("pending"),
     listByStatus("blocked"),
     listUnclaimed(),
+    listInvites(),
   ]);
 
   return (
@@ -25,9 +28,14 @@ export default async function AdminPage() {
           Who gets in
         </h1>
         <p className="mb-8 text-sm text-parchment-faint">
-          People who have signed in with Google and are waiting for a board.
+          Hand out a link and people let themselves in; anyone arriving without
+          one waits here.
         </p>
-        <ApprovalQueue pending={pending} blocked={blocked} unclaimed={unclaimed} />
+
+        <div className="flex flex-col gap-10">
+          <InviteLinks invites={invites} />
+          <ApprovalQueue pending={pending} blocked={blocked} unclaimed={unclaimed} />
+        </div>
       </main>
     </>
   );

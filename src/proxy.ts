@@ -39,6 +39,8 @@ export const config = {
     /*
      * Everything except:
      * - login and the Google round trip (the way in)
+     * - join, an invite link, which is followed by people who have no account
+     *   at all — the token in the URL is the whole credential
      * - welcome, where somebody who has just signed in with Google picks a
      *   username. They hold a signup cookie but no session yet, so gating on a
      *   session here would make joining impossible. That page guards itself:
@@ -48,6 +50,6 @@ export const config = {
      * - favicon.ico, icon, opengraph-image, robots.txt (metadata: no private
      *   data, and link previews should survive being shared)
      */
-    "/((?!login|welcome|api/auth|api/keep-alive|_next/static|_next/image|favicon.ico|icon|opengraph-image|robots.txt).*)",
+    "/((?!login|join|welcome|api/auth|api/keep-alive|_next/static|_next/image|favicon.ico|icon|opengraph-image|robots.txt).*)",
   ],
 };

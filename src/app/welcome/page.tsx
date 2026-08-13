@@ -1,6 +1,13 @@
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
-import { SIGNUP_COOKIE, verify, type SignupPayload } from "@/lib/session";
+import {
+  INVITE_COOKIE,
+  SIGNUP_COOKIE,
+  verify,
+  type InvitePayload,
+  type SignupPayload,
+} from "@/lib/session";
+import { usableInvite } from "@/lib/invites";
 import { currentUser } from "@/lib/auth";
 import { ClaimUsername } from "@/components/ClaimUsername";
 
@@ -20,9 +27,16 @@ export default async function WelcomePage() {
     .replace(/[^a-z0-9_-]+/g, "")
     .slice(0, 24);
 
+  const claimed = await verify<InvitePayload>(store.get(INVITE_COOKIE)?.value);
+  const invited = claimed ? (await usableInvite(claimed.token)) !== null : false;
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-center px-6 py-20">
-      <ClaimUsername email={signup.email} suggestion={suggestion} />
+      <ClaimUsername
+        email={signup.email}
+        suggestion={suggestion}
+        invited={invited}
+      />
     </main>
   );
 }

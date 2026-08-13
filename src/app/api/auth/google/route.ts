@@ -1,11 +1,15 @@
 import { NextResponse } from "next/server";
 import { authorizeUrl } from "@/lib/google";
 import {
+  INVITE_COOKIE,
+  INVITE_MAX_AGE,
   OAUTH_STATE_COOKIE,
   OAUTH_STATE_MAX_AGE,
   sign,
+  type InvitePayload,
   type OAuthStatePayload,
 } from "@/lib/session";
+import { usableInvite } from "@/lib/invites";
 import { clientIp, rateLimit } from "@/lib/rate-limit";
 
 /** Starts the sign-in: sets a one-time state and hands off to Google. */
@@ -36,6 +40,23 @@ export async function GET(request: Request) {
   );
 
   const response = NextResponse.redirect(authorizeUrl(origin, state));
+
+  // An invite has to survive the trip to Google and back, so it rides in a
+  // signed cookie rather than in the redirect. It is re-checked when the
+  // account is actually created — this only remembers the claim.
+  const invite = url.searchParams.get("invite");
+  if (invite && (await usableInvite(invite))) {
+    response.cookies.set({
+      name: INVITE_COOKIE,
+      value: await sign<InvitePayload>({ token: invite }, INVITE_MAX_AGE),
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: INVITE_MAX_AGE,
+    });
+  }
+
   // The same nonce, in a cookie: the callback requires both halves to agree,
   // which is what stops somebody else's sign-in being replayed at you.
   response.cookies.set({

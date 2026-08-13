@@ -14,10 +14,13 @@
 export const SESSION_COOKIE = "vb_session";
 export const SIGNUP_COOKIE = "vb_signup";
 export const OAUTH_STATE_COOKIE = "vb_oauth";
+/** Remembers which invite link somebody arrived through, across Google. */
+export const INVITE_COOKIE = "vb_invite";
 
 export const SESSION_MAX_AGE = 60 * 60 * 24 * 90; // 90 days
 export const SIGNUP_MAX_AGE = 60 * 15; // long enough to choose a username
 export const OAUTH_STATE_MAX_AGE = 60 * 10;
+export const INVITE_MAX_AGE = 60 * 30;
 
 /** What the session cookie carries: an account id and nothing else. */
 export type SessionPayload = { uid: string };
@@ -31,6 +34,8 @@ export type SignupPayload = {
 };
 
 export type OAuthStatePayload = { nonce: string; next?: string };
+
+export type InvitePayload = { token: string };
 
 type Envelope<T> = T & { exp: number; v: 2 };
 

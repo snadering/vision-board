@@ -1,12 +1,15 @@
 import { NextResponse } from "next/server";
 import {
+  INVITE_COOKIE,
   SESSION_COOKIE,
   SESSION_MAX_AGE,
   SIGNUP_COOKIE,
   createSessionToken,
   verify,
+  type InvitePayload,
   type SignupPayload,
 } from "@/lib/session";
+import { countInviteUse, usableInvite } from "@/lib/invites";
 import { cookies } from "next/headers";
 import {
   createProfile,
@@ -46,12 +49,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "That name is taken." }, { status: 409 });
   }
 
+  // The cookie only says which link was clicked; whether it still opens the
+  // door is decided here, at the moment the account is made.
+  const claimed = await verify<InvitePayload>(store.get(INVITE_COOKIE)?.value);
+  const invite = claimed ? await usableInvite(claimed.token) : null;
+
   try {
     const profile = await createProfile({
       username,
       email: signup.email,
       googleSub: signup.sub,
+      ...(invite ? { invitedBy: invite.id, approved: true } : {}),
     });
+    if (invite) await countInviteUse(invite);
 
     // Best effort, and deliberately after the account exists: no avatar is a
     // perfectly good account, and Google being slow should not fail a sign-up.
@@ -65,7 +75,11 @@ export async function POST(request: Request) {
       }
     }
 
-    const response = NextResponse.json({ ok: true, username: profile.username });
+    const response = NextResponse.json({
+      ok: true,
+      username: profile.username,
+      status: profile.status,
+    });
     response.cookies.set({
       name: SESSION_COOKIE,
       value: await createSessionToken(profile.id),
@@ -76,6 +90,7 @@ export async function POST(request: Request) {
       maxAge: SESSION_MAX_AGE,
     });
     response.cookies.delete(SIGNUP_COOKIE);
+    response.cookies.delete(INVITE_COOKIE);
     return response;
   } catch (thrown) {
     console.error(thrown);

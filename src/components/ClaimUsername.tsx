@@ -8,9 +8,12 @@ import { MAX_USERNAME_LENGTH, usernameProblem } from "@/lib/types";
 export function ClaimUsername({
   email,
   suggestion,
+  invited,
 }: {
   email: string;
   suggestion: string;
+  /** Arrived through an invite link, so no queue. */
+  invited: boolean;
 }) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -47,7 +50,16 @@ export function ClaimUsername({
       });
 
       if (response.ok) {
-        router.replace("/pending");
+        const body = (await response.json().catch(() => null)) as
+          | { username?: string; status?: string }
+          | null;
+        // An invited account is already approved, so it goes to its board
+        // rather than to the waiting room.
+        router.replace(
+          body?.status === "approved" && body.username
+            ? `/u/${body.username}`
+            : "/pending",
+        );
         router.refresh();
         return;
       }
@@ -79,6 +91,7 @@ export function ClaimUsername({
         </h1>
         <p className="mt-4 text-xs leading-relaxed text-parchment-faint">
           This is how everyone will find your board. Signed in as {email}.
+          {invited ? " Your board opens as soon as you claim it." : null}
         </p>
       </div>
 

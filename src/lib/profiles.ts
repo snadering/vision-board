@@ -116,6 +116,10 @@ type NewProfile = {
   googleSub: string;
   avatarUrl?: string | null;
   avatarPath?: string | null;
+  /** Set when the account arrived through an invite link. */
+  invitedBy?: string;
+  /** Invited accounts skip the queue. */
+  approved?: boolean;
 };
 
 export async function createProfile(input: NewProfile): Promise<Profile> {
@@ -127,7 +131,8 @@ export async function createProfile(input: NewProfile): Promise<Profile> {
       google_sub: input.googleSub,
       avatar_url: input.avatarUrl ?? null,
       avatar_path: input.avatarPath ?? null,
-      status: "pending",
+      status: input.approved ? "approved" : "pending",
+      invited_by: input.invitedBy ?? null,
     })
     .select(COLUMNS)
     .single();
