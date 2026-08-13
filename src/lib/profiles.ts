@@ -278,6 +278,68 @@ export async function updateProfile(
 }
 
 /**
+ * Removes an account and everything belonging to it: the visions, the image
+ * files behind them, the profile picture, and the row itself.
+ *
+ * Paths are collected before anything is deleted, because deleting the row
+ * cascades the visions away and takes the record of where their files live
+ * with it. The row goes first and the files after: a failure part-way then
+ * leaves unreferenced files in the bucket, which is invisible, rather than
+ * rows pointing at images that no longer exist, which is not.
+ *
+ * There is no undo.
+ */
+export async function deleteProfileCompletely(
+  id: string,
+): Promise<{ visions: number; files: number }> {
+  const db = supabase();
+
+  const profile = await getProfileByIdWithAvatar(id);
+  if (!profile) throw new Error("That account no longer exists");
+
+  const { data: visions, error: visionError } = await db
+    .from("visions")
+    .select("image_path")
+    .eq("user_id", id);
+  if (visionError) {
+    throw new Error(`Could not read their visions: ${visionError.message}`);
+  }
+
+  const files = [
+    ...((visions ?? []) as { image_path: string }[]).map((v) => v.image_path),
+    ...(profile.avatar_path ? [profile.avatar_path] : []),
+  ].filter(Boolean);
+
+  const { error } = await db.from("profiles").delete().eq("id", id);
+  if (error) throw new Error(`Could not delete that account: ${error.message}`);
+
+  if (files.length > 0) {
+    const { error: storageError } = await db.storage
+      .from(STORAGE_BUCKET)
+      .remove(files);
+    if (storageError) {
+      // The account is gone either way; a stray file is not worth an error the
+      // caller can do nothing about.
+      console.error(`Deleted ${id} but left files behind`, storageError);
+    }
+  }
+
+  return { visions: visions?.length ?? 0, files: files.length };
+}
+
+async function getProfileByIdWithAvatar(
+  id: string,
+): Promise<{ avatar_path: string | null } | null> {
+  const { data, error } = await supabase()
+    .from("profiles")
+    .select("avatar_path")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw new Error(`Could not load profile: ${error.message}`);
+  return (data as { avatar_path: string | null }) ?? null;
+}
+
+/**
  * Stores an avatar and returns its public URL. Replacing one removes the old
  * object afterwards, so a person's avatars do not accumulate in the bucket.
  */

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { adminUser } from "@/lib/auth";
 import {
+  deleteProfileCompletely,
   getProfileById,
   mergeSignupIntoProfile,
   updateProfile,
@@ -74,5 +75,57 @@ export async function POST(
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: "Could not do that." }, { status: 500 });
+  }
+}
+
+/**
+ * Deletes an account outright.
+ *
+ * The caller must send the username back, and it must match the account being
+ * deleted. That makes a mistargeted request — a stale page, a wrong id — fail
+ * instead of destroying the wrong person's board.
+ */
+export async function DELETE(
+  request: Request,
+  context: RouteContext<"/api/admin/profiles/[id]">,
+) {
+  const admin = await adminUser();
+  if (!admin) {
+    return NextResponse.json({ error: "Not authorised" }, { status: 403 });
+  }
+
+  const { id } = await context.params;
+
+  const profile = await getProfileById(id);
+  if (!profile) {
+    return NextResponse.json({ error: "Unknown account." }, { status: 404 });
+  }
+  if (profile.is_admin) {
+    return NextResponse.json(
+      { error: "Administrators cannot be deleted." },
+      { status: 400 },
+    );
+  }
+  if (profile.id === admin.id) {
+    return NextResponse.json(
+      { error: "You cannot delete your own account." },
+      { status: 400 },
+    );
+  }
+
+  const confirm = new URL(request.url).searchParams.get("confirm");
+  if (confirm?.trim().toLowerCase() !== profile.username.toLowerCase()) {
+    return NextResponse.json(
+      { error: "That name does not match the account." },
+      { status: 400 },
+    );
+  }
+
+  try {
+    const removed = await deleteProfileCompletely(id);
+    return NextResponse.json({ ok: true, ...removed });
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ error: "Could not delete that account." }, { status: 500 });
   }
 }

@@ -18,6 +18,9 @@ export function MemberList({ members }: { members: AdminProfile[] }) {
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Which account is being deleted, and what has been typed to confirm it.
+  const [deleting, setDeleting] = useState<string | null>(null);
+  const [typed, setTyped] = useState("");
 
   async function setStatus(member: AdminProfile, action: "approve" | "block") {
     if (busy) return;
@@ -36,6 +39,33 @@ export function MemberList({ members }: { members: AdminProfile[] }) {
           | null;
         setError(body?.error ?? "Could not change that account.");
       } else {
+        router.refresh();
+      }
+    } catch {
+      setError("Could not reach the server.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function remove(member: AdminProfile) {
+    if (busy) return;
+    setBusy(member.id);
+    setError(null);
+
+    try {
+      const response = await fetch(
+        `/api/admin/profiles/${member.id}?confirm=${encodeURIComponent(typed.trim())}`,
+        { method: "DELETE" },
+      );
+      if (!response.ok) {
+        const body = (await response.json().catch(() => null)) as
+          | { error?: string }
+          | null;
+        setError(body?.error ?? "Could not delete that account.");
+      } else {
+        setDeleting(null);
+        setTyped("");
         router.refresh();
       }
     } catch {
@@ -123,26 +153,106 @@ export function MemberList({ members }: { members: AdminProfile[] }) {
                   </p>
                 </div>
 
-                <div className="shrink-0">
+                <div className="flex shrink-0 items-center gap-2">
                   {member.is_admin ? (
-                    // An admin cannot be blocked; the API refuses it too, so
-                    // there is nothing here to press by accident.
+                    // An admin can be neither blocked nor deleted; the API
+                    // refuses both, so there is nothing here to press.
                     <span className="text-[11px] text-parchment-faint">—</span>
                   ) : (
-                    <button
-                      type="button"
-                      disabled={busy === member.id}
-                      onClick={() => setStatus(member, blocked ? "approve" : "block")}
-                      className={`cursor-pointer rounded-full border px-4 py-1.5 text-[11px] transition-colors disabled:opacity-50 ${
-                        blocked
-                          ? "border-white/12 text-parchment-dim hover:bg-white/8"
-                          : "border-white/12 text-parchment-faint hover:border-blush/40 hover:text-blush"
-                      }`}
-                    >
-                      {blocked ? "Let back in" : "Block"}
-                    </button>
+                    <>
+                      <button
+                        type="button"
+                        disabled={busy === member.id}
+                        onClick={() => setStatus(member, blocked ? "approve" : "block")}
+                        className={`cursor-pointer rounded-full border px-4 py-1.5 text-[11px] transition-colors disabled:opacity-50 ${
+                          blocked
+                            ? "border-white/12 text-parchment-dim hover:bg-white/8"
+                            : "border-white/12 text-parchment-faint hover:border-blush/40 hover:text-blush"
+                        }`}
+                      >
+                        {blocked ? "Let back in" : "Block"}
+                      </button>
+
+                      {/*
+                        Deliberately quiet, and it only opens the confirmation
+                        — nothing here deletes on a single click.
+                      */}
+                      <button
+                        type="button"
+                        aria-label={`Delete ${member.username}`}
+                        onClick={() => {
+                          setError(null);
+                          setTyped("");
+                          setDeleting(deleting === member.id ? null : member.id);
+                        }}
+                        className="cursor-pointer rounded-full px-2 py-1.5 text-[11px] text-parchment-faint/70 transition-colors hover:text-blush"
+                      >
+                        Delete
+                      </button>
+                    </>
                   )}
                 </div>
+
+                <AnimatePresence initial={false}>
+                  {deleting === member.id ? (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="w-full overflow-hidden"
+                    >
+                      <div className="mt-3 rounded-xl border border-blush/25 bg-blush/[0.06] p-4">
+                        <p className="text-xs leading-relaxed text-parchment">
+                          Deleting <strong>{member.username}</strong> removes their
+                          account, their{" "}
+                          {member.vision_count === 1
+                            ? "1 vision"
+                            : `${member.vision_count} visions`}{" "}
+                          and every image behind them. This cannot be undone.
+                        </p>
+
+                        <p className="mt-3 mb-2 text-[11px] text-parchment-faint">
+                          Type <span className="text-parchment">{member.username}</span>{" "}
+                          to confirm.
+                        </p>
+
+                        <div className="flex flex-wrap items-center gap-2">
+                          <input
+                            type="text"
+                            value={typed}
+                            autoComplete="off"
+                            spellCheck={false}
+                            onChange={(event) => setTyped(event.target.value)}
+                            placeholder={member.username}
+                            className="glass min-w-0 flex-1 rounded-full px-4 py-2 text-xs text-parchment placeholder:text-parchment-faint/50 focus:outline-none"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setDeleting(null);
+                              setTyped("");
+                            }}
+                            className="cursor-pointer rounded-full border border-white/12 px-4 py-2 text-[11px] text-parchment-dim transition-colors hover:bg-white/8"
+                          >
+                            Keep
+                          </button>
+                          <button
+                            type="button"
+                            disabled={
+                              busy === member.id ||
+                              typed.trim().toLowerCase() !==
+                                member.username.toLowerCase()
+                            }
+                            onClick={() => remove(member)}
+                            className="cursor-pointer rounded-full border border-blush/40 bg-blush/15 px-4 py-2 text-[11px] text-blush transition-colors hover:bg-blush/25 disabled:cursor-not-allowed disabled:opacity-40"
+                          >
+                            {busy === member.id ? "Deleting…" : "Delete permanently"}
+                          </button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ) : null}
+                </AnimatePresence>
               </motion.li>
             );
           })}
