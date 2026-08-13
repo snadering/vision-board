@@ -1,4 +1,5 @@
 # Vision Board
+<img width="1421" height="1009" alt="Screenshot 2026-08-13 at 19 12 42" src="https://github.com/user-attachments/assets/c197a16f-e602-43d2-a250-d90e49bb0d03" />
 
 A private, password-protected vision board for two people, deployed at
 [vision.skr.dk](https://vision.skr.dk).
