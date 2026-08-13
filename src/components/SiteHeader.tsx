@@ -77,7 +77,7 @@ export function SiteHeader({
                   aria-current={onQueue ? "page" : undefined}
                   className={navLink(onQueue)}
                 >
-                  Queue
+                  People
                   {pendingCount > 0 ? (
                     <span className="ml-1.5 rounded-full bg-ember/25 px-1.5 py-0.5 text-[10px] text-ember-soft tabular-nums">
                       {pendingCount}

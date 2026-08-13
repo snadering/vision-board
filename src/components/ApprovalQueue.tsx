@@ -7,12 +7,11 @@ import type { Profile } from "@/lib/types";
 
 type Props = {
   pending: Profile[];
-  blocked: Profile[];
   /** Accounts from before sign-in existed, still waiting for their owner. */
   unclaimed: Profile[];
 };
 
-export function ApprovalQueue({ pending, blocked, unclaimed }: Props) {
+export function ApprovalQueue({ pending, unclaimed }: Props) {
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -205,33 +204,6 @@ export function ApprovalQueue({ pending, blocked, unclaimed }: Props) {
         </section>
       ) : null}
 
-      {blocked.length > 0 ? (
-        <section>
-          <h2 className="label-caps mb-3 text-parchment-faint">
-            Declined ({blocked.length})
-          </h2>
-          <ul className="flex flex-col gap-2">
-            {blocked.map((person) => (
-              <li
-                key={person.id}
-                className="flex items-center justify-between gap-3 rounded-xl border border-white/8 px-4 py-3"
-              >
-                <span className="truncate text-xs text-parchment-faint">
-                  {person.username} · {person.email}
-                </span>
-                <button
-                  type="button"
-                  disabled={busy === person.id}
-                  onClick={() => act(person.id, "approve")}
-                  className="shrink-0 cursor-pointer rounded-full border border-white/12 px-4 py-1.5 text-xs text-parchment-dim transition-colors hover:bg-white/8 disabled:opacity-50"
-                >
-                  Let them in after all
-                </button>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
     </div>
   );
 }

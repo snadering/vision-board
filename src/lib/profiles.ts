@@ -89,6 +89,32 @@ export async function listDirectory(): Promise<DirectoryEntry[]> {
   );
 }
 
+/** Everyone, whatever their status, with how many visions they have. */
+export type AdminProfile = Profile & { vision_count: number };
+
+export async function listEveryone(): Promise<AdminProfile[]> {
+  const db = supabase();
+
+  const [{ data: profiles, error }, { data: visions, error: visionError }] =
+    await Promise.all([
+      db.from("profiles").select(COLUMNS).order("created_at", { ascending: true }),
+      db.from("visions").select("user_id"),
+    ]);
+
+  if (error) throw new Error(`Could not load profiles: ${error.message}`);
+  if (visionError) throw new Error(`Could not count visions: ${visionError.message}`);
+
+  const counts = new Map<string, number>();
+  for (const row of (visions ?? []) as { user_id: string | null }[]) {
+    if (row.user_id) counts.set(row.user_id, (counts.get(row.user_id) ?? 0) + 1);
+  }
+
+  return ((profiles ?? []) as Profile[]).map((profile) => ({
+    ...profile,
+    vision_count: counts.get(profile.id) ?? 0,
+  }));
+}
+
 export async function listByStatus(status: ProfileStatus): Promise<Profile[]> {
   const { data, error } = await supabase()
     .from("profiles")
