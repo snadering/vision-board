@@ -17,14 +17,16 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
+  // Vercel supplies the deployed hostname, so the domain need not be written
+  // down anywhere in the repository; the fallback only matters locally.
   metadataBase: new URL(
     process.env.VERCEL_PROJECT_PRODUCTION_URL
       ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-      : "https://vision.skr.dk",
+      : "http://localhost:3000",
   ),
   title: "Vision Board",
-  description: "Two people, one dream board.",
-  // Public by URL, but it has no business in an index.
+  description: "A dim room where a few people keep the things they are holding out for.",
+  // Closed to anyone not signed in, and no business in an index either.
   robots: { index: false, follow: false, nocache: true },
 };
 

@@ -2,7 +2,7 @@
 <img width="1421" height="1009" alt="Screenshot 2026-08-13 at 19 12 42" src="https://github.com/user-attachments/assets/c197a16f-e602-43d2-a250-d90e49bb0d03" />
 
 A private, invite-only place where a handful of people keep the things they are
-holding out for. Live at [vision.skr.dk](https://vision.skr.dk).
+holding out for.
 
 Everyone has a board. A vision is a picture with a title and a few affirmation
 keywords, and a board is not a grid of them: every page load draws a fresh
@@ -199,15 +199,15 @@ wrong person. Admins cannot be blocked or deleted.
 3. Add all six environment variables from the table above.
 4. Add the domain under **Project Settings → Domains**:
 
-   | Type  | Name     | Value                  |
-   | ----- | -------- | ---------------------- |
-   | CNAME | `vision` | `cname.vercel-dns.com` |
+   | Type  | Name             | Value                  |
+   | ----- | ---------------- | ---------------------- |
+   | CNAME | your subdomain   | `cname.vercel-dns.com` |
 
    Use whatever target Vercel shows when you add the domain, if it differs.
 5. Register both redirect URIs on the Google credential, exactly:
 
    ```
-   https://vision.skr.dk/api/auth/callback
+   https://<your-domain>/api/auth/callback
    http://localhost:3000/api/auth/callback
    ```
 

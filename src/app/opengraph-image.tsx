@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 
-export const alt = "Vision Board — two people, one dream board.";
+export const alt = "Vision Board — a room of dream boards.";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -64,7 +64,7 @@ export default function OpengraphImage() {
             color: "#e6a380",
           }}
         >
-          Two people, one dream board
+          A room of dream boards
         </div>
       </div>
     ),
