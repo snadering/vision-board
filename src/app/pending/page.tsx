@@ -1,13 +1,14 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { currentUser } from "@/lib/auth";
+import { sessionProfile } from "@/lib/auth";
 import { SiteHeader } from "@/components/SiteHeader";
 
 export const metadata = { title: "Almost in — Vision Board" };
 
 export default async function PendingPage() {
-  const user = await currentUser();
+  const user = await sessionProfile();
   if (!user) redirect("/login");
+  if (user.status === "blocked") redirect("/blocked");
   if (user.status === "approved") redirect(`/u/${user.username}`);
 
   return (

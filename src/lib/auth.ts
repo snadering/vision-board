@@ -13,13 +13,24 @@ import type { Profile } from "@/lib/types";
  * calls this rather than trusting the cookie alone.
  */
 export async function currentUser(): Promise<Profile | null> {
+  const profile = await sessionProfile();
+  if (!profile || profile.status === "blocked") return null;
+  return profile;
+}
+
+/**
+ * The account behind the cookie, blocked or not.
+ *
+ * Only for the few places that must tell "nobody is signed in" apart from
+ * "this person no longer has access" — the sign-in page and the page that
+ * explains the removal. Everywhere else wants `currentUser`, which treats a
+ * blocked account as nobody.
+ */
+export async function sessionProfile(): Promise<Profile | null> {
   const store = await cookies();
   const session = await readSessionToken(store.get(SESSION_COOKIE)?.value);
   if (!session?.uid) return null;
-
-  const profile = await getProfileById(session.uid);
-  if (!profile || profile.status === "blocked") return null;
-  return profile;
+  return getProfileById(session.uid);
 }
 
 /** The signed-in account, but only once you have been let in. */

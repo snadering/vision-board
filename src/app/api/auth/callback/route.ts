@@ -107,7 +107,11 @@ export async function GET(request: Request) {
       }
 
       const destination =
-        profile.status === "approved" ? next : "/pending";
+        profile.status === "approved"
+          ? next
+          : profile.status === "blocked"
+            ? "/blocked"
+            : "/pending";
       const response = NextResponse.redirect(new URL(destination, origin));
       response.cookies.set({
         name: SESSION_COOKIE,

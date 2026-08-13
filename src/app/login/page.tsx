@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { currentUser } from "@/lib/auth";
+import { sessionProfile } from "@/lib/auth";
 
 const MESSAGES: Record<string, string> = {
   cancelled: "That sign-in was cancelled.",
@@ -16,8 +16,13 @@ export const metadata = { title: "Sign in — Vision Board" };
 export default async function LoginPage({
   searchParams,
 }: PageProps<"/login">) {
-  const user = await currentUser();
-  if (user) redirect(user.status === "approved" ? "/" : "/pending");
+  const user = await sessionProfile();
+  if (user) {
+    // Without this a blocked account bounces between here and Google forever,
+    // never being told why.
+    if (user.status === "blocked") redirect("/blocked");
+    redirect(user.status === "approved" ? "/" : "/pending");
+  }
 
   const params = await searchParams;
   const error = typeof params.error === "string" ? MESSAGES[params.error] : null;
