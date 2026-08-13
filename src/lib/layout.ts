@@ -11,6 +11,12 @@ export type LayoutItem = {
    * with more visions a little larger.
    */
   weight?: number;
+  /**
+   * Largest this item may ever be drawn, in pixels. Profile pictures come from
+   * Google at 96px, so the directory caps them rather than letting a wide
+   * screen enlarge a small source into mush.
+   */
+  maxWidth?: number;
 };
 
 /**
@@ -169,10 +175,19 @@ function relax(boxes: Placement[], containerWidth: number): void {
   }
 }
 
+export type ScatterOptions = {
+  /**
+   * Largest a grid cell may be. Lowering it clusters small items together
+   * instead of stranding each one in the middle of a cell sized for a poster.
+   */
+  cellCap?: number;
+};
+
 export function computeScatterLayout(
   visions: readonly LayoutItem[],
   containerWidth: number,
   seed: number,
+  options: ScatterOptions = {},
 ): Layout {
   if (visions.length === 0 || containerWidth <= 0) {
     return { placements: [], height: 0 };
@@ -182,15 +197,17 @@ export function computeScatterLayout(
   const ordered = shuffle(visions, rnd);
   const count = ordered.length;
 
+  const cellCap = options.cellCap ?? 440;
+
   // Enough columns to fill the width, but never so many that a handful of
   // visions ends up as a thin row of stamps.
-  const byWidth = Math.max(2, Math.round(containerWidth / 360));
+  const byWidth = Math.max(2, Math.round(containerWidth / (cellCap * 0.82)));
   const byCount = Math.max(2, Math.ceil(Math.sqrt(count * 1.25)));
   const cols = Math.max(1, Math.min(byWidth, byCount, count));
 
   // Cells are capped so a board holding two visions composes them at a normal
   // card size in a centred band, rather than blowing them up to poster scale.
-  const cellWidth = Math.min(containerWidth / cols, 440);
+  const cellWidth = Math.min(containerWidth / cols, cellCap);
   const cellHeight = cellWidth * 0.95;
   const baseWidth = cellWidth * 0.74;
   const originX = (containerWidth - cellWidth * cols) / 2;
@@ -209,7 +226,7 @@ export function computeScatterLayout(
       height = maxHeight;
       width = height * aspect;
     }
-    const maxWidth = cellWidth * 0.95;
+    const maxWidth = Math.min(cellWidth * 0.95, vision.maxWidth ?? Infinity);
     if (width > maxWidth) {
       width = maxWidth;
       height = width / aspect;
@@ -280,7 +297,10 @@ export function computeColumnLayout(
 
   let cursor = EDGE_PADDING;
   const placements: Placement[] = ordered.map((vision, index) => {
-    const width = containerWidth * (0.78 + rnd() * 0.08);
+    const width = Math.min(
+      containerWidth * (0.78 + rnd() * 0.08),
+      vision.maxWidth ?? Infinity,
+    );
     const aspect = vision.width / Math.max(vision.height, 1);
     let height = width / aspect;
     const maxHeight = containerWidth * 1.45;

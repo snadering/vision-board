@@ -288,7 +288,12 @@ export async function importGoogleAvatar(
   pictureUrl: string,
 ): Promise<{ url: string; path: string } | null> {
   try {
-    const response = await fetch(pictureUrl);
+    // Google hands out a 96px thumbnail by default, encoded as an "=s96-c"
+    // suffix. Asking for the same picture at 512 costs nothing and is the
+    // difference between a crisp avatar and an upscaled one.
+    const wanted = pictureUrl.replace(/=s\d+(-c)?$/, "=s512-c");
+
+    const response = await fetch(wanted);
     if (!response.ok) return null;
 
     const contentType = response.headers.get("content-type") ?? "image/jpeg";

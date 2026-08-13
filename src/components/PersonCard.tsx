@@ -117,9 +117,9 @@ export function PersonCard({ person, placement, index, isYou }: Props) {
 
             <CardScrim />
 
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between gap-2 p-3 text-left sm:p-4">
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between gap-1.5 p-2.5 text-left">
               <div className="min-w-0">
-                <h3 className="title-shadow truncate font-display text-lg leading-tight text-parchment sm:text-xl">
+                <h3 className="title-shadow truncate font-display text-base leading-tight text-parchment">
                   {person.username}
                   {isYou ? (
                     <span className="ml-2 align-middle text-[10px] tracking-widest text-ember-soft/80 uppercase">
@@ -127,7 +127,7 @@ export function PersonCard({ person, placement, index, isYou }: Props) {
                     </span>
                   ) : null}
                 </h3>
-                <p className="title-shadow mt-1 text-[11px] text-parchment-faint">
+                <p className="title-shadow mt-0.5 text-[10px] text-parchment-faint">
                   {person.vision_count === 0
                     ? "no visions yet"
                     : `${person.vision_count} vision${person.vision_count === 1 ? "" : "s"}`}

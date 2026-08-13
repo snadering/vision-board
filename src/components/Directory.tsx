@@ -53,7 +53,11 @@ export function Directory({
         // Avatars are square; the scatter's own scale and rotation do the rest.
         width: 1,
         height: 1,
-        weight: 0.85 + Math.min(person.vision_count, 12) / 12 * 0.4,
+        // Deliberately much smaller than a vision card. The source picture is a
+        // 96px Google avatar, so drawn large it is mostly interpolation — and
+        // people read as a cast of faces rather than as a wall of boards.
+        weight: 0.7 + (Math.min(person.vision_count, 12) / 12) * 0.25,
+        maxWidth: 176,
       })),
     [people],
   );
@@ -62,7 +66,9 @@ export function Directory({
     if (width === 0) return null;
     return isMobile
       ? computeColumnLayout(items, width, seed)
-      : computeScatterLayout(items, width, seed);
+      : // A cell barely wider than a face, so a handful of people gather rather
+        // than scatter to the corners of a board built for photographs.
+        computeScatterLayout(items, width, seed, { cellCap: 300 });
   }, [items, width, isMobile, seed]);
 
   const byId = useMemo(
