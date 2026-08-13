@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import type { Profile } from "@/lib/types";
 
 /**
@@ -11,6 +11,18 @@ import type { Profile } from "@/lib/types";
  * approved one gets their board, their settings, and the queue if they run the
  * place.
  */
+/**
+ * The lit pill marks where you are, not where we would like you to go — so it
+ * follows the route rather than sitting permanently on "My board".
+ */
+const navLink = (active: boolean) =>
+  [
+    "relative rounded-full px-4 py-2 text-sm whitespace-nowrap transition-all duration-300 active:scale-[0.98]",
+    active
+      ? "border border-ember/30 bg-ember/12 text-ember-soft shadow-[0_0_30px_-10px_color-mix(in_oklab,var(--color-ember)_60%,transparent)] hover:bg-ember/22"
+      : "border border-transparent text-parchment-faint hover:bg-white/6 hover:text-parchment-dim",
+  ].join(" ");
+
 export function SiteHeader({
   user,
   pendingCount = 0,
@@ -19,6 +31,7 @@ export function SiteHeader({
   pendingCount?: number;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [leaving, setLeaving] = useState(false);
 
   async function onSignOut() {
@@ -30,6 +43,12 @@ export function SiteHeader({
   }
 
   const approved = user?.status === "approved";
+
+  const here = decodeURIComponent(pathname ?? "").toLowerCase();
+  // "My board" lights up only on your own board, not on somebody else's.
+  const onMyBoard = approved && here === `/u/${user.username.toLowerCase()}`;
+  const onQueue = here.startsWith("/admin");
+  const onSettings = here.startsWith("/settings");
 
   return (
     <header className="sticky top-0 z-40 px-4 pt-4 pb-2 sm:px-8 sm:pt-6">
@@ -46,7 +65,8 @@ export function SiteHeader({
             <>
               <Link
                 href={`/u/${user.username}`}
-                className="rounded-full border border-ember/30 bg-ember/12 px-4 py-2 text-sm whitespace-nowrap text-ember-soft shadow-[0_0_30px_-10px_color-mix(in_oklab,var(--color-ember)_60%,transparent)] transition-all duration-300 hover:bg-ember/22 active:scale-[0.98] sm:px-5"
+                aria-current={onMyBoard ? "page" : undefined}
+                className={navLink(onMyBoard)}
               >
                 My board
               </Link>
@@ -54,7 +74,8 @@ export function SiteHeader({
               {user.is_admin ? (
                 <Link
                   href="/admin"
-                  className="relative rounded-full px-3 py-2 text-sm text-parchment-faint transition-colors hover:bg-white/6 hover:text-parchment-dim"
+                  aria-current={onQueue ? "page" : undefined}
+                  className={navLink(onQueue)}
                 >
                   Queue
                   {pendingCount > 0 ? (
@@ -67,7 +88,8 @@ export function SiteHeader({
 
               <Link
                 href="/settings"
-                className="rounded-full px-3 py-2 text-sm text-parchment-faint transition-colors hover:bg-white/6 hover:text-parchment-dim"
+                aria-current={onSettings ? "page" : undefined}
+                className={navLink(onSettings)}
               >
                 Settings
               </Link>
