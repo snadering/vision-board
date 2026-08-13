@@ -40,3 +40,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# The original build brief. Kept locally; it contains the old shared password.
+BRIEF.md

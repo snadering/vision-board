@@ -52,15 +52,19 @@ alter table visions alter column owner drop not null;
 -- Until each is claimed they are deliberately absent from the directory (see
 -- `listDirectory`), so the front page never shows a person nobody has signed
 -- in as.
+--
+-- The addresses below are placeholders: this repository is public, so the real
+-- ones were substituted when this was run. Anyone re-running this migration
+-- should put the Google addresses of the first two accounts here.
 insert into profiles (username, email, status, is_admin)
-values ('sander', 'sanderroust@gmail.com', 'approved', true)
+values ('sander', 'first-owner@example.com', 'approved', true)
 on conflict (username) do update
   set email = excluded.email,
       status = excluded.status,
       is_admin = excluded.is_admin;
 
 insert into profiles (username, email, status)
-values ('jessica', 'jess@tuohy.com', 'approved')
+values ('jessica', 'second-owner@example.com', 'approved')
 on conflict (username) do update
   set email = excluded.email,
       status = excluded.status;
