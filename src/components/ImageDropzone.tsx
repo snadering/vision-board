@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { ImageError, prepareImage, type PreparedImage } from "@/lib/prepare-image";
+import { gradientCss, type GradientSpec } from "@/lib/gradient";
 import { ACCEPTED_INPUT_MIME } from "@/lib/types";
 
 type Props = {
@@ -11,9 +12,20 @@ type Props = {
   disabled?: boolean;
   /** The photo already on the record, shown until a replacement is chosen. */
   existing?: { url: string; width: number; height: number } | null;
+  /**
+   * What will be painted if no picture is chosen. Shown so the fallback is a
+   * visible choice rather than a surprise after saving.
+   */
+  fallback?: { spec: GradientSpec; onShuffle: () => void } | null;
 };
 
-export function ImageDropzone({ image, onChange, disabled, existing }: Props) {
+export function ImageDropzone({
+  image,
+  onChange,
+  disabled,
+  existing,
+  fallback,
+}: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
   const [optimising, setOptimising] = useState(false);
@@ -121,6 +133,38 @@ export function ImageDropzone({ image, onChange, disabled, existing }: Props) {
               >
                 Swap image
               </button>
+            </div>
+          </div>
+        ) : fallback ? (
+          <div className="flex items-center gap-4 p-3">
+            <div
+              aria-hidden
+              className="h-24 w-24 shrink-0 rounded-lg"
+              style={{ backgroundImage: gradientCss(fallback.spec) }}
+            />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm text-parchment">No picture? We&rsquo;ll paint one.</p>
+              <p className="mt-0.5 text-[11px] leading-relaxed text-parchment-faint">
+                You can swap it for a photo whenever you like.
+              </p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  disabled={disabled}
+                  onClick={() => inputRef.current?.click()}
+                  className="cursor-pointer rounded-full border border-white/15 px-3 py-1 text-xs text-parchment-dim transition-colors hover:bg-white/8 disabled:opacity-50"
+                >
+                  Choose a photo
+                </button>
+                <button
+                  type="button"
+                  disabled={disabled}
+                  onClick={fallback.onShuffle}
+                  className="cursor-pointer rounded-full border border-white/15 px-3 py-1 text-xs text-parchment-dim transition-colors hover:bg-white/8 disabled:opacity-50"
+                >
+                  Another colour
+                </button>
+              </div>
             </div>
           </div>
         ) : (

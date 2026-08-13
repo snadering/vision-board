@@ -6,6 +6,7 @@ import { ImageDropzone } from "@/components/ImageDropzone";
 import { TagInput } from "@/components/TagInput";
 import { useDialog } from "@/lib/use-dialog";
 import type { PreparedImage } from "@/lib/prepare-image";
+import { randomGradient, renderGradient, type GradientSpec } from "@/lib/gradient";
 import { MAX_TITLE_LENGTH, type Vision } from "@/lib/types";
 
 type Props = {
@@ -24,6 +25,8 @@ export function VisionModal({ open, vision, onClose, onSaved }: Props) {
   const [tags, setTags] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Only used when creating without a photograph.
+  const [gradient, setGradient] = useState<GradientSpec>(() => randomGradient());
 
   const ref = useDialog(open && !submitting, onClose);
 
@@ -38,6 +41,7 @@ export function VisionModal({ open, vision, onClose, onSaved }: Props) {
     setTags(vision?.tags ?? []);
     setImage(null);
     setError(null);
+    setGradient(randomGradient());
   }
 
   // Only clear once the modal has finished closing, so a failed submit keeps
@@ -54,7 +58,8 @@ export function VisionModal({ open, vision, onClose, onSaved }: Props) {
     return () => window.clearTimeout(timer);
   }, [open]);
 
-  const complete = title.trim().length > 0 && (editing || image !== null);
+  // A picture is optional now: without one, a gradient is painted on submit.
+  const complete = title.trim().length > 0;
   const changed =
     !editing ||
     image !== null ||
@@ -72,15 +77,22 @@ export function VisionModal({ open, vision, onClose, onSaved }: Props) {
     const body = new FormData();
     body.set("title", title.trim());
     body.set("tags", JSON.stringify(tags));
-    // On an edit with no replacement chosen, the file is simply left out and
-    // the stored photo is kept.
-    if (image) {
-      body.set("width", String(image.width));
-      body.set("height", String(image.height));
-      body.set("file", image.file);
-    }
 
     try {
+      if (image) {
+        body.set("width", String(image.width));
+        body.set("height", String(image.height));
+        body.set("file", image.file);
+      } else if (!editing) {
+        // Nothing chosen, and this is a new vision: paint the stand-in that has
+        // been on show in the form.
+        body.set("width", String(gradient.width));
+        body.set("height", String(gradient.height));
+        body.set("file", await renderGradient(gradient));
+      }
+      // On an edit with no replacement chosen, no file is sent at all and the
+      // stored photo is kept.
+
       const response = await fetch(
         editing ? `/api/visions/${vision.id}` : "/api/visions",
         { method: editing ? "PATCH" : "POST", body },
@@ -185,6 +197,14 @@ export function VisionModal({ open, vision, onClose, onSaved }: Props) {
                           height: vision.height,
                         }
                       : null
+                  }
+                  fallback={
+                    editing
+                      ? null
+                      : {
+                          spec: gradient,
+                          onShuffle: () => setGradient(randomGradient()),
+                        }
                   }
                 />
               </div>
