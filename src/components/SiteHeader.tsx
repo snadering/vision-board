@@ -23,6 +23,18 @@ const navLink = (active: boolean) =>
       : "border border-transparent text-parchment-faint hover:bg-white/6 hover:text-parchment-dim",
   ].join(" ");
 
+/**
+ * Icon-only nav controls — the gear and the lock. Same footprint as each other,
+ * and the same lit treatment as the text items when you are on that page.
+ */
+const iconLink = (active: boolean) =>
+  [
+    "flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full border transition-colors duration-300",
+    active
+      ? "border-ember/30 bg-ember/12 text-ember-soft shadow-[0_0_30px_-10px_color-mix(in_oklab,var(--color-ember)_60%,transparent)]"
+      : "border-transparent text-parchment-faint hover:bg-white/6 hover:text-parchment-dim",
+  ].join(" ");
+
 export function SiteHeader({
   user,
   pendingCount = 0,
@@ -88,10 +100,27 @@ export function SiteHeader({
 
               <Link
                 href="/settings"
+                aria-label="Settings"
+                title="Settings"
                 aria-current={onSettings ? "page" : undefined}
-                className={navLink(onSettings)}
+                className={iconLink(onSettings)}
               >
-                Settings
+                {/* Stroke 1.8 in a 24 viewBox reads at the same weight as the
+                    lock's 1.2 in a 16 one. */}
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  aria-hidden
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <circle cx="12" cy="12" r="3" />
+                  <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2Z" />
+                </svg>
               </Link>
             </>
           ) : null}
@@ -103,7 +132,7 @@ export function SiteHeader({
               disabled={leaving}
               aria-label="Sign out"
               title="Sign out"
-              className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-parchment-faint transition-colors duration-300 hover:bg-white/6 hover:text-parchment-dim disabled:opacity-50"
+              className={`${iconLink(false)} disabled:opacity-50`}
             >
               <svg
                 width="15"
