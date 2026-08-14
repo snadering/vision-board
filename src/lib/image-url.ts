@@ -11,10 +11,16 @@ const RENDER_SEGMENT = "/storage/v1/render/image/public/";
  * A width-constrained variant served by Supabase's image transformation
  * endpoint. If the project has transformations disabled the request 400s, and
  * the card falls back to `publicUrl` (see `VisionCard`).
+ *
+ * `resize=contain` is not optional. Given a width alone the endpoint keeps the
+ * source height, so a 1200×900 photo asked for at 800 comes back 800×900 —
+ * squashed, not scaled. `contain` scales to fit the width and keeps the aspect
+ * ratio, without needing to know the source dimensions, which matters for
+ * avatars where those are not stored.
  */
 export function cardImageUrl(publicUrl: string, width = 800): string {
   if (!publicUrl.includes(OBJECT_SEGMENT)) return publicUrl;
-  return `${publicUrl.replace(OBJECT_SEGMENT, RENDER_SEGMENT)}?width=${width}&quality=75`;
+  return `${publicUrl.replace(OBJECT_SEGMENT, RENDER_SEGMENT)}?width=${width}&resize=contain&quality=75`;
 }
 
 /**

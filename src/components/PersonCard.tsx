@@ -38,7 +38,10 @@ export function PersonCard({ person, placement, index, isYou }: Props) {
   // zero opacity forever. The ref catches that case on mount, and keying the
   // element on its src makes the ref run again whenever the photo changes.
   const markLoaded = useCallback(
-    () => setImage((current) => (current.loaded ? current : { ...current, loaded: true })),
+    () =>
+      setImage((current) =>
+        current.loaded ? current : { ...current, loaded: true },
+      ),
     [],
   );
 
@@ -82,30 +85,48 @@ export function PersonCard({ person, placement, index, isYou }: Props) {
             className="group relative block h-full w-full overflow-hidden rounded-[var(--radius-glass)] border border-white/10 bg-white/5 shadow-[0_24px_60px_-32px_rgba(0,0,0,0.95)] transition-[transform,box-shadow] duration-500 ease-[var(--ease-soft)] hover:-translate-y-1.5 hover:scale-[1.02] hover:shadow-[0_40px_90px_-30px_rgba(0,0,0,1)] focus-visible:-translate-y-1.5"
           >
             {image.src ? (
-              <Image
-                key={image.src}
-                ref={(node) => {
-                  if (node?.complete && node.naturalWidth > 0) markLoaded();
-                }}
-                src={image.src}
-                alt=""
-                fill
-                sizes="(max-width: 767px) 84vw, 26vw"
-                placeholder="blur"
-                blurDataURL={BLUR_DATA_URL}
-                loading={index < 4 ? "eager" : "lazy"}
-                onLoad={markLoaded}
-                onError={() =>
-                  setImage((current) =>
-                    !person.avatar_url || current.src === person.avatar_url
-                      ? current
-                      : { ...current, src: person.avatar_url },
-                  )
-                }
-                className={`object-cover transition-opacity duration-700 ${
-                  image.loaded ? "opacity-100" : "opacity-0"
-                }`}
-              />
+              <>
+                {/*
+                  People are drawn in square cards, but a profile picture is
+                  whatever shape its owner uploaded. Cropping one to fit takes
+                  a slice out of the middle of somebody's face, so the picture
+                  is fitted whole and a blurred, enlarged copy of itself fills
+                  the space left over. Same src as the layer above, so the
+                  browser fetches it once.
+                */}
+                <Image
+                  src={image.src}
+                  alt=""
+                  aria-hidden
+                  fill
+                  sizes="(max-width: 767px) 84vw, 26vw"
+                  className="scale-125 object-cover opacity-45 blur-xl"
+                />
+                <Image
+                  key={image.src}
+                  ref={(node) => {
+                    if (node?.complete && node.naturalWidth > 0) markLoaded();
+                  }}
+                  src={image.src}
+                  alt=""
+                  fill
+                  sizes="(max-width: 767px) 84vw, 26vw"
+                  placeholder="blur"
+                  blurDataURL={BLUR_DATA_URL}
+                  loading={index < 4 ? "eager" : "lazy"}
+                  onLoad={markLoaded}
+                  onError={() =>
+                    setImage((current) =>
+                      !person.avatar_url || current.src === person.avatar_url
+                        ? current
+                        : { ...current, src: person.avatar_url },
+                    )
+                  }
+                  className={`object-contain transition-opacity duration-700 ${
+                    image.loaded ? "opacity-100" : "opacity-0"
+                  }`}
+                />
+              </>
             ) : (
               // No picture: the initial, set in the display serif.
               <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-plum/60 to-ink-800">
@@ -147,7 +168,10 @@ export function PersonCard({ person, placement, index, isYou }: Props) {
                   className="mb-0.5 shrink-0 text-parchment-faint"
                 >
                   <rect x="3" y="7" width="10" height="7" rx="2" />
-                  <path d="M5.5 7V5a2.5 2.5 0 1 1 5 0v2" strokeLinecap="round" />
+                  <path
+                    d="M5.5 7V5a2.5 2.5 0 1 1 5 0v2"
+                    strokeLinecap="round"
+                  />
                 </svg>
               ) : null}
             </div>
